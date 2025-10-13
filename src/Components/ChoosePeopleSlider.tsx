@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { useState, ChangeEvent } from "react";
 import { Item } from "../interfaces/item";
 import { updatePeople } from "../interfaces/groceryList";
