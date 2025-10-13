@@ -1,38 +1,102 @@
-.App {
-  text-align: center;
-}
-
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
 @media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+    .App-logo {
+        animation: App-logo-spin infinite 20s linear;
+    }
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+.App-input-box {
+    background-color: #ffffff;
+    min-height: 15vh;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    font-size: calc(5px + 2vmin);
+    color: rgb(0, 0, 0);
 }
 
-.App-link {
-  color: #61dafb;
+.grocery-list-title {
+    margin-left: 10%;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.set-people {
+    margin-left: 5%;
+    margin-top: 2%;
+    display: block;
+}
+
+.App-table {
+    display: flex;
+    flex-direction: column;
+    gap: 10px; /* spacing between cells */
+    width: fit-content;
+    border: 1px solid black;
+    margin-left: 12%;
+    margin-right: 10%;
+    background-color: #fff;
+}
+
+.table-header {
+    display: grid;
+    grid-template-columns: 1fr 1fr repeat(var(--num-people), 1fr);
+    gap: 10px;
+    font-weight: bold;
+    border-bottom: 2px solid black;
+    text-align: center;
+    padding: 4px 8px;
+}
+
+.header-item,
+.header-price,
+.header-choice {
+    font-weight: bold;
+    border-bottom: 2px solid black;
+    text-align: center;
+    padding: 4px 8px;
+}
+
+/* Each row will follow the same grid columns */
+.table-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr repeat(var(--num-people), 1fr);
+    gap: 10px;
+    align-items: center; /* vertically center content */
+    border-bottom: 1px solid #ccc;
+    padding: 6px 8px;
+}
+
+.table-item {
+    border-bottom: 1px solid #ccc;
+    padding: 6px 0px;
+    text-align: left;
+    font-size: 22px;
+}
+
+.table-price,
+.table-choice {
+    border-bottom: 1px solid #ccc;
+    padding: 6px 0px;
+    text-align: center;
+    font-size: 22px;
+}
+
+.table-footer {
+    display: grid;
+    grid-template-columns: 1fr 1fr repeat(var(--num-people), 1fr);
+    gap: 10px;
+    align-items: center;
+    border-top: 2px solid black;
+    font-weight: bold;
+    padding: 6px 8px;
+    text-align: center;
+}
+
+.footer-label {
+    text-align: right;
+    padding-right: 10px;
+    font-weight: bold;
+}
+
+.footer-person {
+    text-align: center;
 }
