@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import { getGeminiResponse } from "./ai.js";
+import { BACKEND_URL } from "./url.js";
 
 dotenv.config();
 
@@ -30,8 +31,7 @@ app.post("/api/generate", async (req, res) => {
             return res.status(400).json({ error: "Missing image" });
         }
 
-        const response = await getGeminiResponse(image);
-        const text = response.text;
+        const text = await getGeminiResponse(image);
         res.json({ message: text });
     } catch (error) {
         console.error("Error in /api/generate:", error);
@@ -42,18 +42,24 @@ app.post("/api/generate", async (req, res) => {
 app.post("/api/proxy-generate", async (req, res) => {
     try {
         const { image } = req.body;
-        const response = await fetch(
-            "https://cisc470-chatbot.onrender.com/api/generate",
-            {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ image }),
-            },
-        );
+        if (!image) return res.status(400).json({ error: "No image provided" });
+
+        console.log("Received image length:", image.length);
+
+        // Call the local AI endpoint instead of React dev server
+        const response = await fetch(`${BACKEND_URL}/api/generate`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ image }),
+        });
+
         const data = await response.json();
         res.json(data);
     } catch (err) {
-        res.status(500).json({ error: "Failed to fetch from external API" });
+        console.error("Error in /api/proxy-generate:", err);
+        res.status(500).json({
+            error: "Failed to fetch from local AI endpoint",
+        });
     }
 });
 

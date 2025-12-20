@@ -28,7 +28,7 @@ export function ChoosePeopleSlider({
             newPeople.push(
                 ...Array(newNumPeople - people.length).fill({
                     total: 0,
-                    name: "Name",
+                    name: "",
                 }),
             );
         else if (newNumPeople < people.length)

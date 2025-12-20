@@ -9,9 +9,43 @@ an item in the following format:
 }
 
 1. name should be the exact item name from the receipt.
-2. price should be the numeric value of the item.
+2. price should be the numeric value of the item minus any discounts.
 3. people should be an array of false values, one for 
     each person (assume 2 people for example if not specified).
 
 Do not include any text, explanations, or markdown—just return the JSON array.
 If the image is not a reciept or cannot be read at all, return "Cannot Read Image".
+
+Use generic names, especially for long or abbreviated names.
+Use info from stores and their databases.
+Ex. chrmn ess str 6mr sp m -> Charmin Essentials Strong 6 Mega Rolls -> Toilet Paper
+Ex. Downy Ultra Liquid Fabric Conditioner -> Fabric Softener
+Ex. Kirkland Signature Meatballs -> Meatballs
+
+Make it as generic as possible without losing it's meaning.
+
+Object should be a parseable json without any extra words, characters, spaces, etc.
+The exact format of the response should be:
+
+[
+  {
+    "name": "string",
+    "price": number,
+    "people": [boolean, boolean]
+  },
+  {
+    "name": "string",
+    "price": number,
+    "people": [boolean, boolean]
+  },
+  {
+    "name": "string",
+    "price": number,
+    "people": [boolean, boolean]
+  },
+  {
+    "name": "string",
+    "price": number,
+    "people": [boolean, boolean]
+  }
+]

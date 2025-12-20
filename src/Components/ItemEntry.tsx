@@ -86,7 +86,7 @@ export function ItemEntry({
                 style={{
                     height: "28px",
                     width: "100px",
-                    fontSize: "calc(5px + 2vmin)",
+                    fontSize: "calc(1px + 2vmin)",
                     left: "10px",
                 }}
                 onChange={handleChange}

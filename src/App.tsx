@@ -12,8 +12,8 @@ import { UploadReciept } from "./Components/UploadReciept";
 function App(): React.JSX.Element {
     const [groceryList, setGroceryList] = useState<Item[]>([]);
     const [people, setPeople] = useState<Person[]>([
-        { total: 0, name: "Name" },
-        { total: 0, name: "Name" },
+        { total: 0, name: "" },
+        { total: 0, name: "" },
     ]);
 
     const priceRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -100,17 +100,17 @@ function App(): React.JSX.Element {
                     </div>
                 ))}
                 <div className="table-footer">
-                    <div></div>
                     <div className="footer-label">Totals:</div>
-                    {groceryList.length > 0 && (
-                        <>
-                            {people.map((person: Person, i: number) => (
-                                <div className="footer-person" key={i}>
-                                    <div>{people[i].total.toFixed(2)}</div>
-                                </div>
-                            ))}
-                        </>
-                    )}
+                    <div className="footer-total-price">
+                        {groceryList
+                            .reduce((sum, item) => sum + (item.price || 0), 0)
+                            .toFixed(2)}
+                    </div>
+                    {people.map((person: Person, i: number) => (
+                        <div className="footer-person" key={i}>
+                            {people[i].total.toFixed(2)}
+                        </div>
+                    ))}
                 </div>
             </div>
             <UploadReciept

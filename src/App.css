@@ -4,99 +4,181 @@
     }
 }
 
+/* ===== Global App Styling ===== */
+.App {
+    background: linear-gradient(135deg, #f5f7fa, #e4ecf7);
+    min-height: 100vh;
+    padding-bottom: 40px;
+    font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* ===== Input Header ===== */
 .App-input-box {
-    background-color: #ffffff;
-    min-height: 15vh;
+    background: #1e3a8a;
+    min-height: 12vh;
     display: flex;
-    flex-direction: row;
     align-items: center;
     justify-content: center;
-    font-size: calc(5px + 2vmin);
-    color: rgb(0, 0, 0);
+    font-size: calc(6px + 2vmin);
+    color: #ffffff;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
 }
 
+.App-input-box input {
+    border-radius: 6px;
+    border: none;
+    padding: 6px 10px;
+    margin-right: 8px;
+}
+
+.App-input-box button {
+    background-color: #22c55e;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 0.9em;
+    cursor: pointer;
+    color: white;
+}
+
+.App-input-box button:hover {
+    background-color: #16a34a;
+}
+
+/* ===== Titles ===== */
 .grocery-list-title {
-    margin-left: 10%;
+    margin: 24px 0 12px 12%;
+    color: #1e293b;
 }
 
+/* ===== People Slider ===== */
 .set-people {
     margin-left: 5%;
     margin-top: 2%;
-    display: block;
+    background: white;
+    padding: 16px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    display: inline-block;
 }
 
+/* ===== Table Container ===== */
 .App-table {
     display: flex;
     flex-direction: column;
-    gap: 10px; /* spacing between cells */
+    gap: 6px;
     width: fit-content;
-    border: 1px solid black;
+    border-radius: 12px;
+    border: 1px solid #cbd5e1;
     margin-left: 12%;
     margin-right: 10%;
-    background-color: #fff;
+    background-color: #ffffff;
+    overflow: hidden;
 }
 
+/* ===== Headers ===== */
 .table-header {
     display: grid;
     grid-template-columns: 1fr 1fr repeat(var(--num-people), 1fr);
     gap: 10px;
     font-weight: bold;
-    border-bottom: 2px solid black;
+    background: #1e40af;
+    color: white;
     text-align: center;
-    padding: 4px 8px;
+    padding: 10px 8px;
 }
 
 .header-item,
 .header-price,
 .header-choice {
     font-weight: bold;
-    border-bottom: 2px solid black;
-    text-align: center;
-    padding: 4px 8px;
 }
 
-/* Each row will follow the same grid columns */
+/* ===== Rows ===== */
 .table-row {
     display: grid;
     grid-template-columns: 1fr 1fr repeat(var(--num-people), 1fr);
     gap: 10px;
-    align-items: center; /* vertically center content */
-    border-bottom: 1px solid #ccc;
-    padding: 6px 8px;
+    align-items: center;
+    padding: 8px;
+    background-color: #f8fafc;
 }
 
+.table-row:nth-child(even) {
+    background-color: #eef2ff;
+}
+
+/* ===== Cells ===== */
 .table-item {
-    border-bottom: 1px solid #ccc;
-    padding: 6px 0px;
     text-align: left;
-    font-size: 22px;
+    font-size: 18px;
 }
 
 .table-price,
 .table-choice {
-    border-bottom: 1px solid #ccc;
-    padding: 6px 0px;
     text-align: center;
-    font-size: 22px;
+    font-size: 18px;
 }
 
+/* ===== Footer ===== */
 .table-footer {
     display: grid;
     grid-template-columns: 1fr 1fr repeat(var(--num-people), 1fr);
     gap: 10px;
     align-items: center;
-    border-top: 2px solid black;
+    background: #1e3a8a;
+    color: white;
     font-weight: bold;
-    padding: 6px 8px;
+    padding: 10px 8px;
     text-align: center;
 }
 
 .footer-label {
     text-align: right;
     padding-right: 10px;
-    font-weight: bold;
 }
 
 .footer-person {
     text-align: center;
+}
+
+/* ===== Buttons ===== */
+button {
+    border-radius: 6px;
+}
+
+button:hover {
+    opacity: 0.9;
+}
+
+/* ===== Inputs ===== */
+input[type="text"],
+input[type="number"] {
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 4px 6px;
+}
+
+input[type="checkbox"] {
+    accent-color: #2563eb;
+}
+
+/* ===== Upload Receipt Button Top-Right ===== */
+.upload-receipt-button {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: #f59e0b;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 1em;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+}
+
+.upload-receipt-button:hover {
+    background-color: #d97706;
 }
