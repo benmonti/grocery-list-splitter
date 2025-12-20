@@ -1,0 +1,17 @@
+Analyze the following image of a receipt. Return only a 
+JSON array where each element is an object representing 
+an item in the following format:
+
+{
+  "name": "string",
+  "price": 0.0,
+  "people": [false, false, ...]
+}
+
+1. name should be the exact item name from the receipt.
+2. price should be the numeric value of the item.
+3. people should be an array of false values, one for 
+    each person (assume 2 people for example if not specified).
+
+Do not include any text, explanations, or markdown—just return the JSON array.
+If the image is not a reciept or cannot be read at all, return "Cannot Read Image".

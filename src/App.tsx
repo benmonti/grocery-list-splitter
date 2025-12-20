@@ -7,6 +7,7 @@ import { CreateChoiceBoxes } from "./Components/CreateChoiceBoxes";
 import { PriceBox } from "./Components/PriceBox";
 import { Item } from "./interfaces/item";
 import { Person } from "./interfaces/people";
+import { UploadReciept } from "./Components/UploadReciept";
 
 function App(): React.JSX.Element {
     const [groceryList, setGroceryList] = useState<Item[]>([]);
@@ -112,6 +113,10 @@ function App(): React.JSX.Element {
                     )}
                 </div>
             </div>
+            <UploadReciept
+                groceryList={groceryList}
+                setGroceryList={setGroceryList}
+            ></UploadReciept>
         </div>
     );
 }
