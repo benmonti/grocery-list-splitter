@@ -46,7 +46,6 @@ export function UploadReciept({
 
         // 🔍 LOG EXACTLY WHAT YOU PARSE
         console.log("AI TEXT (raw):", aiText);
-        console.log("AI TEXT (stringified):", JSON.stringify(aiText));
 
         // Validate JSON before parsing
         let newGroceryList: Item[] = [];
