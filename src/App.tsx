@@ -6,7 +6,7 @@ import * as rtdb from "firebase/database";
 import * as fbauth from "firebase/auth";
 import { ReceiptSplitter } from "./Components/ReceiptSplitter";
 import { Dashboard } from "./Components/Dashboard";
-import googleLogo from "/Users/benmonti/grocery-list-splitter/Images/google-logo.png";
+import googleLogo from "./Images/google-logo.png";
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
