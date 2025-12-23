@@ -22,8 +22,11 @@ export function Dashboard({ user }: { user: fbauth.User | null }) {
             if (data) {
                 // Transform the data from Firebase into List[]
                 const loadedLists: List[] = Object.keys(data).map((key) => ({
-                    name: data[key].name,
-                    groceryList: data[key].groceryList || [],
+                    name: data[key]?.name ?? key,
+                    groceryList:
+                        Array.isArray(data[key]?.groceryList) ?
+                            data[key].groceryList
+                        :   [],
                 }));
                 setLists(loadedLists);
             } else {
@@ -41,7 +44,7 @@ export function Dashboard({ user }: { user: fbauth.User | null }) {
 
     async function addList() {
         const newName = `List-${lists.length + 1}`;
-        const newGroceryList = { groceryList: [], name: newName };
+        const newGroceryList: List = { groceryList: [], name: newName };
         let listsCopy: List[] = [...copyLists(lists), { ...newGroceryList }];
         setLists(listsCopy);
         if (user) {
