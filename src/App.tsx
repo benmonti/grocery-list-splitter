@@ -6,8 +6,6 @@ import * as rtdb from "firebase/database";
 import * as fbauth from "firebase/auth";
 import { ReceiptSplitter } from "./Components/ReceiptSplitter";
 import { Dashboard } from "./Components/Dashboard";
-import googleLogo from "../Images/google-logo.png";
-
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -73,15 +71,15 @@ function App(): React.JSX.Element {
                         borderRadius: "15px",
                     }}
                 >
-                    {/* <img
-                        src={googleLogo}
+                    <img
+                        src="/grocery-list-splitter/google-logo.png"
                         alt="Google"
                         style={{
                             width: "10%",
                             height: "40%",
                             marginRight: "10px",
                         }}
-                    ></img> */}
+                    ></img>
                     Login With Google
                 </button>
             </div>
