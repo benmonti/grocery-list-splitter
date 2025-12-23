@@ -6,7 +6,7 @@ import { BACKEND_URL } from "./url.js";
 
 dotenv.config();
 
-const PORT = process.env.PORT || 3001;
+const PORT = import.meta.env.PORT || 3001;
 
 const app = express();
 
