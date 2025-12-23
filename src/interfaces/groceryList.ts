@@ -1,9 +1,25 @@
 import { Item } from "./item";
 
+export interface List {
+    name: string;
+    groceryList: Item[];
+}
+
 export interface groceryListProps {
     /**The list that holds all items on the reciept */
     groceryList: Item[];
     setGroceryList: (newList: Item[]) => void;
+}
+
+export function copyLists(lists: List[]) {
+    const newLists: List[] = lists.map((list: List) => {
+        const newList: List = {
+            name: list.name,
+            groceryList: copyGroceryList(list.groceryList),
+        };
+        return newList;
+    });
+    return newLists;
 }
 
 export function copyGroceryList(groceryList: Item[]): Item[] {

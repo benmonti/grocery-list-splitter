@@ -1,120 +1,181 @@
-import { useState, useRef } from "react";
-import { Item } from "../interfaces/item";
-import { Person } from "../interfaces/people";
-import { ChoosePeopleSlider } from "./ChoosePeopleSlider";
-import { CreateChoiceBoxes } from "./CreateChoiceBoxes";
-import { ItemEntry } from "./ItemEntry";
-import { PriceBox } from "./PriceBox";
-import { TextInputAndButton } from "./TextInputAndButton";
-import { UploadReciept } from "./UploadReciept";
+import { useState } from "react";
+import { copyLists, List } from "../interfaces/groceryList";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import * as fbauth from "firebase/auth";
+import { db, auth } from "../App";
+import { useNavigate } from "react-router-dom";
+import { onValue, push, ref, set } from "firebase/database";
+import { useEffect } from "react";
 
-export function Dashboard() {
-    const [groceryList, setGroceryList] = useState<Item[]>([]);
-    const [people, setPeople] = useState<Person[]>([
-        { total: 0, name: "" },
-        { total: 0, name: "" },
-    ]);
+export function Dashboard({ user }: { user: fbauth.User | null }) {
+    const [lists, setLists] = useState<List[]>([]);
+    const navigate = useNavigate();
 
-    const priceRefs = useRef<(HTMLInputElement | null)[]>([]);
+    useEffect(() => {
+        if (!user) return;
+
+        const userListsRef = ref(db, `users/${user.uid}/grocery-lists`);
+
+        const unsubscribe = onValue(userListsRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                // Transform the data from Firebase into List[]
+                const loadedLists: List[] = Object.keys(data).map((key) => ({
+                    name: data[key].name,
+                    groceryList: data[key].groceryList || [],
+                }));
+                setLists(loadedLists);
+            } else {
+                setLists([]);
+            }
+        });
+
+        // Cleanup the listener when the component unmounts
+        return () => unsubscribe();
+    }, [user]);
+
+    const handleSignOut = async () => {
+        await fbauth.signOut(auth);
+    };
+
+    async function addList() {
+        const newName = `List ${lists.length + 1}`;
+        let listsCopy: List[] = [
+            ...copyLists(lists),
+            { groceryList: [], name: newName },
+        ];
+        setLists(listsCopy);
+        if (user) {
+            try {
+                const listRef = ref(
+                    db,
+                    `/users/${user.uid}/grocery-lists/${newName}`,
+                );
+                await set(listRef, {
+                    name: newName,
+                });
+            } catch (error) {
+                console.error("Failed to write list:", error);
+            }
+        }
+    }
+
+    async function deleteList(name: string) {
+        if (!user) return;
+
+        try {
+            // Remove the list from Firebase
+            const listRef = ref(db, `users/${user.uid}/grocery-lists/${name}`);
+            await set(listRef, null);
+
+            // Update local state
+            setLists((prevLists) =>
+                prevLists.filter((list) => list.name !== name),
+            );
+        } catch (err) {
+            console.error("Failed to delete list:", err);
+        }
+    }
+
+    async function clearLists() {
+        if (!user) return;
+        try {
+            const userListsRef = ref(db, `users/${user.uid}/grocery-lists`);
+            await set(userListsRef, null);
+            setLists([]);
+        } catch (err) {
+            console.error("Failed to clear lists:", err);
+        }
+    }
+
     return (
-        <div className="App">
-            <span className="set-people">
-                <ChoosePeopleSlider
-                    people={people}
-                    setPeople={setPeople}
-                    groceryList={groceryList}
-                    setGroceryList={setGroceryList}
-                ></ChoosePeopleSlider>
-            </span>
-            <header className="App-input-box">
-                <TextInputAndButton
-                    groceryList={groceryList}
-                    setGroceryList={setGroceryList}
-                    people={people}
-                ></TextInputAndButton>
-            </header>
-            <h1 className="grocery-list-title">Grocery List:</h1>
+        <div className="dashboard-container">
+            <div className="dashboard-signout-container">
+                <button
+                    className="dashboard-signout-btn"
+                    onClick={handleSignOut}
+                >
+                    Sign Out
+                </button>
+            </div>
             <div
-                className="App-table"
-                style={{ "--num-people": people.length } as React.CSSProperties}
+                className="dashboard-buttons-container"
+                style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    gap: "12px",
+                }}
             >
-                <div className="table-header">
-                    <div className="header-item">Items</div>
-                    <div className="header-price">Prices</div>
-                    {people.map((person: Person, i: number) => (
-                        <div
-                            className="header-person"
-                            key={i}
-                            style={{
-                                borderBottom:
-                                    person.name !== "" ?
-                                        "2px solid black"
-                                    :   "none",
-                            }}
-                        >
-                            {person.name}
-                        </div>
-                    ))}
+                <div className="dashboard-new-list-btn" onClick={addList}>
+                    New List
                 </div>
-                {groceryList.map((groceryItem: Item, index: number) => (
-                    <div className="table-row" key={groceryItem.name}>
-                        <div className="table-item">
-                            <ItemEntry
-                                groceryList={groceryList}
-                                setGroceryList={setGroceryList}
-                                groceryItemIndex={index}
-                                people={people}
-                                setPeople={setPeople}
-                            />
-                        </div>
-                        <div className="table-price">
-                            {"$"}
-                            <PriceBox
-                                groceryList={groceryList}
-                                setGroceryList={setGroceryList}
-                                groceryItem={groceryItem}
-                                priceRef={(
-                                    el: HTMLInputElement | null,
-                                ): void => {
-                                    priceRefs.current[index] = el;
-                                }}
-                                priceRefs={priceRefs}
-                                people={people}
-                                setPeople={setPeople}
-                            />
-                        </div>
-                        {people.map((person: Person, i: number) => (
-                            <div className="table-choice" key={i}>
-                                <CreateChoiceBoxes
-                                    groceryList={groceryList}
-                                    setGroceryList={setGroceryList}
-                                    groceryItemIndex={index}
-                                    people={people}
-                                    setPeople={setPeople}
-                                    index={i}
-                                ></CreateChoiceBoxes>
-                            </div>
-                        ))}
-                    </div>
-                ))}
-                <div className="table-footer">
-                    <div className="footer-label">Totals:</div>
-                    <div className="footer-total-price">
-                        {groceryList
-                            .reduce((sum, item) => sum + (item.price || 0), 0)
-                            .toFixed(2)}
-                    </div>
-                    {people.map((person: Person, i: number) => (
-                        <div className="footer-person" key={i}>
-                            {people[i].total.toFixed(2)}
-                        </div>
-                    ))}
+                <div className="dashboard-clear-lists-btn" onClick={clearLists}>
+                    Clear Lists
                 </div>
             </div>
-            <UploadReciept
-                groceryList={groceryList}
-                setGroceryList={setGroceryList}
-            ></UploadReciept>
+            <div className="list-wrapper">
+                <DragDropContext
+                    onDragEnd={(result) => {
+                        if (!result.destination) return;
+                        const reordered = Array.from(lists);
+                        const [moved] = reordered.splice(
+                            result.source.index,
+                            1,
+                        );
+                        reordered.splice(result.destination.index, 0, moved);
+                        setLists(reordered);
+                    }}
+                >
+                    <Droppable droppableId="lists">
+                        {(provided) => (
+                            <div
+                                {...provided.droppableProps}
+                                ref={provided.innerRef}
+                            >
+                                {lists.map((list, index) => (
+                                    <Draggable
+                                        key={list.name}
+                                        draggableId={list.name}
+                                        index={index}
+                                    >
+                                        {(provided) => (
+                                            <div
+                                                ref={provided.innerRef}
+                                                {...provided.draggableProps}
+                                                {...provided.dragHandleProps}
+                                            >
+                                                <div
+                                                    role="button"
+                                                    className="list-card"
+                                                    // onClick={() =>
+                                                    //     onListClick(index)
+                                                    // }
+                                                >
+                                                    <h3>{list.name}</h3>
+                                                    <hr></hr>
+                                                    <button
+                                                        className="list-delete-btn"
+                                                        onClick={(e) => {
+                                                            deleteList(
+                                                                lists[index]
+                                                                    .name,
+                                                            );
+                                                            e.stopPropagation();
+                                                        }}
+                                                    >
+                                                        Delete List
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </Draggable>
+                                ))}
+                                {provided.placeholder}
+                            </div>
+                        )}
+                    </Droppable>
+                </DragDropContext>
+            </div>
         </div>
     );
 }
