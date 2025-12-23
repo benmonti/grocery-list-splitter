@@ -14,9 +14,11 @@ app.use(express.json({ limit: "10mb" }));
 app.use(
     cors({
         origin: [
-            "http://localhost:3000",
-            "https://benmonti.github.io/grocery-list-splitter/",
+            "https://benmonti.github.io",
+            "https://grocery-list-split.onrender.com",
         ],
+        methods: ["GET", "POST", "OPTIONS"],
+        allowedHeaders: ["Content-Type"],
     }),
 );
 
