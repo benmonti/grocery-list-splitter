@@ -1,5 +1,4 @@
 {
-    "homepage": "https://benmonti.github.io/grocery-list-splitter/",
     "name": "grocery-list-splitter",
     "version": "0.1.0",
     "type": "module",
@@ -31,7 +30,7 @@
         "build-server": "npm install typescript && npx tsc",
         "start-server": "node ./dist/server.js",
         "predeploy": "npm run build",
-        "deploy": "gh-pages -d build"
+        "deploy": "gh-pages -d dist"
     },
     "eslintConfig": {
         "extends": [
