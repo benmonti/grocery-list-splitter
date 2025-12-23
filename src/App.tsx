@@ -88,7 +88,7 @@ function App(): React.JSX.Element {
         );
     } else {
         return (
-            <BrowserRouter>
+            <BrowserRouter basename="gocery-list-splitter">
                 <Routes>
                     <Route
                         path="/"
