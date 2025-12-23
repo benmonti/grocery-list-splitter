@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import "./App.css";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
 import { initializeApp } from "firebase/app";
 import * as rtdb from "firebase/database";
 import * as fbauth from "firebase/auth";
@@ -86,7 +86,7 @@ function App(): React.JSX.Element {
         );
     } else {
         return (
-            <BrowserRouter basename="/grocery-list-splitter">
+            <HashRouter basename="/grocery-list-splitter">
                 <Routes>
                     <Route
                         path="/"
@@ -101,7 +101,7 @@ function App(): React.JSX.Element {
                         element={<ReceiptSplitter user={user} />}
                     />
                 </Routes>
-            </BrowserRouter>
+            </HashRouter>
         );
     }
 }
