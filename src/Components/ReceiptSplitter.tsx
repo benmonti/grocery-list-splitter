@@ -24,14 +24,12 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
 
     useEffect(() => {
         if (!user || !listName) return;
-        if (!hasLoaded.current) return;
 
         const userGroceryRef = ref(
             db,
             `users/${user.uid}/grocery-lists/${listName}`,
         );
 
-        // Save the current groceryList to Firebase
         get(userGroceryRef)
             .then((snapshot) => {
                 if (snapshot.exists()) {
@@ -39,24 +37,20 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                 }
                 hasLoaded.current = true;
             })
-            .catch((err) =>
-                console.error("Failed to update grocery list:", err),
-            );
-    }, [listName, user]);
+            .catch(console.error);
+    }, [user, listName]);
 
     useEffect(() => {
         if (!user || !listName) return;
+        if (!hasLoaded.current) return;
 
         const userGroceryRef = ref(
             db,
             `users/${user.uid}/grocery-lists/${listName}`,
         );
 
-        // Save the current groceryList to Firebase
-        set(userGroceryRef, groceryList).catch((err) =>
-            console.error("Failed to update grocery list:", err),
-        );
-    }, [groceryList, listName, user]);
+        set(userGroceryRef, groceryList).catch(console.error);
+    }, [groceryList, user, listName]);
 
     const priceRefs = useRef<(HTMLInputElement | null)[]>([]);
     return (
