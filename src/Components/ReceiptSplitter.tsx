@@ -9,7 +9,8 @@ import { TextInputAndButton } from "./TextInputAndButton";
 import { UploadReciept } from "./UploadReciept";
 import * as fbauth from "firebase/auth";
 import { db } from "../App";
-import { ref, set } from "firebase/database";
+import { get, ref, set } from "firebase/database";
+import { useParams, useLocation } from "react-router-dom";
 
 export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
     const [groceryList, setGroceryList] = useState<Item[]>([]);
@@ -17,20 +18,45 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
         { total: 0, name: "" },
         { total: 0, name: "" },
     ]);
+    const { listName } = useParams();
+    const location = useLocation();
+    const hasLoaded = useRef(false);
 
     useEffect(() => {
-        if (!user) return;
+        if (!user || !listName) return;
 
         const userGroceryRef = ref(
             db,
-            `users/${user.uid}/current-grocery-list`,
+            `users/${user.uid}/grocery-lists/${listName}`,
         );
 
         // Save the current groceryList to Firebase
         set(userGroceryRef, groceryList).catch((err) =>
             console.error("Failed to update grocery list:", err),
         );
-    }, [groceryList, user]);
+    }, [groceryList, listName, user]);
+
+    useEffect(() => {
+        if (!user || !listName) return;
+        if (!hasLoaded.current) return;
+
+        const userGroceryRef = ref(
+            db,
+            `users/${user.uid}/grocery-lists/${listName}`,
+        );
+
+        // Save the current groceryList to Firebase
+        get(userGroceryRef)
+            .then((snapshot) => {
+                if (snapshot.exists()) {
+                    setGroceryList(snapshot.val());
+                }
+                hasLoaded.current = true;
+            })
+            .catch((err) =>
+                console.error("Failed to update grocery list:", err),
+            );
+    }, [listName, user]);
 
     const priceRefs = useRef<(HTMLInputElement | null)[]>([]);
     return (
