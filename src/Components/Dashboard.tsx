@@ -18,7 +18,7 @@ export function Dashboard({ user }: { user: fbauth.User | null }) {
         const userListsRef = ref(db, `users/${user.uid}/grocery-lists`);
 
         const unsubscribe = onValue(userListsRef, (snapshot) => {
-            const data = snapshot.val();
+            const data = snapshot.val() || {};
             if (data) {
                 // Transform the data from Firebase into List[]
                 const loadedLists: List[] = Object.keys(data).map((key) => ({
@@ -41,10 +41,8 @@ export function Dashboard({ user }: { user: fbauth.User | null }) {
 
     async function addList() {
         const newName = `List-${lists.length + 1}`;
-        let listsCopy: List[] = [
-            ...copyLists(lists),
-            { groceryList: [], name: newName },
-        ];
+        const newGroceryList = { groceryList: [], name: newName };
+        let listsCopy: List[] = [...copyLists(lists), { ...newGroceryList }];
         setLists(listsCopy);
         if (user) {
             try {
@@ -52,9 +50,7 @@ export function Dashboard({ user }: { user: fbauth.User | null }) {
                     db,
                     `/users/${user.uid}/grocery-lists/${newName}`,
                 );
-                await set(listRef, {
-                    name: newName,
-                });
+                await set(listRef, { ...newGroceryList });
             } catch (error) {
                 console.error("Failed to write list:", error);
             }
