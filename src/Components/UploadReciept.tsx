@@ -23,6 +23,18 @@ export function UploadReciept({
         });
     }
 
+    function extractJsonArray(text: string): string | null {
+        // look for the first `[` and the last `]`
+        const start = text.indexOf("[");
+        const end = text.lastIndexOf("]");
+
+        if (start === -1 || end === -1) {
+            return null;
+        }
+
+        return text.slice(start, end + 1);
+    }
+
     async function uploadRecieptToGemini(
         event: React.ChangeEvent<HTMLInputElement>,
     ) {
@@ -43,17 +55,22 @@ export function UploadReciept({
         console.log("FULL BACKEND RESPONSE:", data);
 
         const aiText: string = data?.message || "No AI Response";
+        const jsonString = extractJsonArray(aiText);
 
+        if (!jsonString) {
+            alert("AI response did not contain a JSON array");
+            return;
+        }
         // 🔍 LOG EXACTLY WHAT YOU PARSE
         console.log("AI TEXT (raw):", aiText);
 
         // Validate JSON before parsing
         let newGroceryList: Item[] = [];
         try {
-            newGroceryList = JSON.parse(aiText);
+            newGroceryList = JSON.parse(jsonString);
         } catch (err) {
-            console.error("AI returned invalid JSON:", aiText);
-            alert("Failed to parse AI response. Response: " + aiText);
+            console.error("AI returned invalid JSON:", jsonString);
+            alert("Failed to parse AI response. Response: " + jsonString);
             return;
         }
 
