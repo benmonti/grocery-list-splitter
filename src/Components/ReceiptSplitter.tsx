@@ -34,26 +34,35 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
             .then((snapshot) => {
                 if (snapshot.exists()) {
                     const data = snapshot.val();
+                    // If the groceryList exists in Firebase, load it
                     if (Array.isArray(data)) {
                         setGroceryList(data);
                     } else if (Array.isArray(data.groceryList)) {
                         setGroceryList(data.groceryList);
                     } else {
+                        // If nothing exists, don't overwrite Firebase yet
                         setGroceryList([]);
                     }
+                } else {
+                    // If no data exists, initialize Firebase with empty list
+                    set(userGroceryRef, { groceryList: [] }).catch(
+                        console.error,
+                    );
+                    setGroceryList([]);
                 }
                 hasLoaded.current = true;
             })
             .catch(console.error);
     }, [user, listName]);
 
+    // Write changes to Firebase whenever groceryList changes, but only after load
     useEffect(() => {
         if (!user || !listName) return;
         if (!hasLoaded.current) return;
 
         const userGroceryRef = ref(
             db,
-            `users/${user.uid}/grocery-lists/${listName}`,
+            `users/${user.uid}/grocery-lists/${listName}/groceryList`,
         );
 
         set(userGroceryRef, groceryList).catch(console.error);
