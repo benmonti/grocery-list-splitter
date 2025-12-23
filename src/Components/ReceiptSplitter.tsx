@@ -33,7 +33,14 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
         get(userGroceryRef)
             .then((snapshot) => {
                 if (snapshot.exists()) {
-                    setGroceryList(snapshot.val());
+                    const data = snapshot.val();
+                    if (Array.isArray(data)) {
+                        setGroceryList(data);
+                    } else if (Array.isArray(data.groceryList)) {
+                        setGroceryList(data.groceryList);
+                    } else {
+                        setGroceryList([]);
+                    }
                 }
                 hasLoaded.current = true;
             })
