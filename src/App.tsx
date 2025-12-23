@@ -73,7 +73,7 @@ function App(): React.JSX.Element {
                         borderRadius: "15px",
                     }}
                 >
-                    <img
+                    {/* <img
                         src={googleLogo}
                         alt="Google"
                         style={{
@@ -81,7 +81,7 @@ function App(): React.JSX.Element {
                             height: "40%",
                             marginRight: "10px",
                         }}
-                    ></img>
+                    ></img> */}
                     Login With Google
                 </button>
             </div>
