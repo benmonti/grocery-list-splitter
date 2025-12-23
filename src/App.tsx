@@ -72,7 +72,7 @@ function App(): React.JSX.Element {
                     }}
                 >
                     <img
-                        src="/grocery-list-splitter/google-logo.png"
+                        src="/google-logo.png"
                         alt="Google"
                         style={{
                             width: "10%",
@@ -86,7 +86,7 @@ function App(): React.JSX.Element {
         );
     } else {
         return (
-            <HashRouter basename="/grocery-list-splitter">
+            <HashRouter>
                 <Routes>
                     <Route
                         path="/"
