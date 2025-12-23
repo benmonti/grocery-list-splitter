@@ -89,18 +89,16 @@ function App(): React.JSX.Element {
             <BrowserRouter basename="/grocery-list-splitter">
                 <Routes>
                     <Route
-                        path="/grocery-lists/:listName"
-                        element={<ReceiptSplitter user={user} />}
+                        path="/"
+                        element={<Navigate to="/grocery-lists" replace />}
                     />
-
                     <Route
                         path="/grocery-lists"
                         element={<Dashboard user={user} />}
                     />
-
                     <Route
-                        path="/"
-                        element={<Navigate to="/grocery-lists" replace />}
+                        path="/grocery-lists/:listName"
+                        element={<ReceiptSplitter user={user} />}
                     />
                 </Routes>
             </BrowserRouter>

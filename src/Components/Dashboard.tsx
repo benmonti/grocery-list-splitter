@@ -3,13 +3,14 @@ import { copyLists, List } from "../interfaces/groceryList";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import * as fbauth from "firebase/auth";
 import { db, auth } from "../App";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { onValue, push, ref, set } from "firebase/database";
 import { useEffect } from "react";
 
 export function Dashboard({ user }: { user: fbauth.User | null }) {
     const [lists, setLists] = useState<List[]>([]);
     const navigate = useNavigate();
+    const location = useLocation();
 
     useEffect(() => {
         if (!user) return;
