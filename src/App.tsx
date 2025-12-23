@@ -99,7 +99,7 @@ function App(): React.JSX.Element {
                         element={<Dashboard user={user} />}
                     />
                     <Route
-                        path="/grocery-lists/:listId"
+                        path="/grocery-lists/:listName"
                         element={<ReceiptSplitter user={user} />}
                     />
                 </Routes>

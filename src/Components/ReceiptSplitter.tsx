@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Item } from "../interfaces/item";
 import { Person } from "../interfaces/people";
 import { ChoosePeopleSlider } from "./ChoosePeopleSlider";
@@ -8,6 +8,8 @@ import { PriceBox } from "./PriceBox";
 import { TextInputAndButton } from "./TextInputAndButton";
 import { UploadReciept } from "./UploadReciept";
 import * as fbauth from "firebase/auth";
+import { db } from "../App";
+import { ref, set } from "firebase/database";
 
 export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
     const [groceryList, setGroceryList] = useState<Item[]>([]);
@@ -15,6 +17,20 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
         { total: 0, name: "" },
         { total: 0, name: "" },
     ]);
+
+    useEffect(() => {
+        if (!user) return;
+
+        const userGroceryRef = ref(
+            db,
+            `users/${user.uid}/current-grocery-list`,
+        );
+
+        // Save the current groceryList to Firebase
+        set(userGroceryRef, groceryList).catch((err) =>
+            console.error("Failed to update grocery list:", err),
+        );
+    }, [groceryList, user]);
 
     const priceRefs = useRef<(HTMLInputElement | null)[]>([]);
     return (

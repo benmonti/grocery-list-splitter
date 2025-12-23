@@ -39,7 +39,7 @@ export function Dashboard({ user }: { user: fbauth.User | null }) {
     };
 
     async function addList() {
-        const newName = `List ${lists.length + 1}`;
+        const newName = `List-${lists.length + 1}`;
         let listsCopy: List[] = [
             ...copyLists(lists),
             { groceryList: [], name: newName },
@@ -147,9 +147,16 @@ export function Dashboard({ user }: { user: fbauth.User | null }) {
                                                 <div
                                                     role="button"
                                                     className="list-card"
-                                                    // onClick={() =>
-                                                    //     onListClick(index)
-                                                    // }
+                                                    onClick={() =>
+                                                        navigate(
+                                                            `/grocery-lists/${list.name}`,
+                                                            {
+                                                                state: {
+                                                                    name: list.name,
+                                                                },
+                                                            },
+                                                        )
+                                                    }
                                                 >
                                                     <h3>{list.name}</h3>
                                                     <hr></hr>
