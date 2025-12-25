@@ -25,7 +25,7 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+export const app = initializeApp(firebaseConfig);
 export const db = rtdb.getDatabase(app);
 export const auth = fbauth.getAuth(app);
 const provider = new fbauth.GoogleAuthProvider();

@@ -36,6 +36,37 @@ export const registerEmail = onCall<
   return {success: true};
 });
 
+export const shareList = onCall<
+  { listId: string; invitedUid: string },
+  Promise<{success: boolean}>
+>(async (request) => {
+  const {listId, invitedUid} = request.data;
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Must be logged in to share");
+  }
+  if (!listId || !invitedUid) {
+    throw new HttpsError("invalid-argument", "Missing parameters");
+  }
+
+  try {
+    // Add invitedUid to editors
+    await admin
+      .database()
+      .ref(`lists/${listId}/editors/${invitedUid}`)
+      .set(true);
+
+    // Add list to the invited user’s list collection
+    await admin
+      .database()
+      .ref(`users/${invitedUid}/lists/${listId}`)
+      .set(true);
+
+    return {success: true};
+  } catch (err) {
+    throw new HttpsError("internal", "Failed to share list");
+  }
+});
 // For cost control, you can set the maximum number of containers that can be
 // running at the same time. This helps mitigate the impact of unexpected
 // traffic spikes by instead downgrading performance. This limit is a
