@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, ChangeEvent } from "react";
 import { Item } from "../interfaces/item";
 import { Person } from "../interfaces/people";
 import { ChoosePeopleSlider } from "./ChoosePeopleSlider";
@@ -9,8 +9,8 @@ import { TextInputAndButton } from "./TextInputAndButton";
 import { UploadReciept } from "./UploadReciept";
 import * as fbauth from "firebase/auth";
 import { db } from "../App";
-import { get, ref, set } from "firebase/database";
-import { useParams, useLocation } from "react-router-dom";
+import { get, onValue, ref, set } from "firebase/database";
+import { useParams } from "react-router-dom";
 
 export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
     const [groceryList, setGroceryList] = useState<Item[]>([]);
@@ -18,55 +18,76 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
         { total: 0, name: "" },
         { total: 0, name: "" },
     ]);
-    const { listName } = useParams();
-    const location = useLocation();
+    const [showShareForm, setShowShareForm] = useState<boolean>(false);
+    const [shareEmail, setShareEmail] = useState<string>("");
+    const { listId } = useParams();
     const hasLoaded = useRef(false);
 
     useEffect(() => {
-        if (!user || !listName) return;
+        if (!user || !listId) return;
 
-        const userGroceryRef = ref(
-            db,
-            `users/${user.uid}/grocery-lists/${listName}`,
-        );
+        const listRef = ref(db, `lists/${listId}`);
 
-        get(userGroceryRef)
-            .then((snapshot) => {
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    // If the groceryList exists in Firebase, load it
-                    if (Array.isArray(data)) {
-                        setGroceryList(data);
-                    } else if (Array.isArray(data.groceryList)) {
-                        setGroceryList(data.groceryList);
-                    } else {
-                        // If nothing exists, don't overwrite Firebase yet
-                        setGroceryList([]);
-                    }
-                } else {
-                    // If no data exists, initialize Firebase with empty list
-                    set(userGroceryRef, { groceryList: [] }).catch(
-                        console.error,
-                    );
-                    setGroceryList([]);
-                }
-                hasLoaded.current = true;
-            })
-            .catch(console.error);
-    }, [user, listName]);
+        // Live updates
+        const unsubscribe = onValue(listRef, (snap) => {
+            const data = snap.val();
+            if (!data) {
+                // Initialize new list if it doesn't exist
+                const newList = {
+                    name: `List-${Date.now()}`,
+                    groceryList: [],
+                    editors: { [user.uid]: true },
+                    createdBy: user.uid,
+                };
+                set(listRef, newList);
+                setGroceryList([]);
+            } else {
+                setGroceryList(
+                    Array.isArray(data.groceryList) ? data.groceryList : [],
+                );
+            }
+            hasLoaded.current = true; // mark loaded AFTER onValue fires
+        });
 
-    // Write changes to Firebase whenever groceryList changes, but only after load
+        return () => unsubscribe();
+    }, [user, listId]);
+
+    // Writing local edits
     useEffect(() => {
-        if (!user || !listName) return;
+        if (!user || !listId) return;
         if (!hasLoaded.current) return;
 
-        const userGroceryRef = ref(
-            db,
-            `users/${user.uid}/grocery-lists/${listName}/groceryList`,
-        );
+        const groceryRef = ref(db, `lists/${listId}/groceryList`);
+        set(groceryRef, groceryList).catch(console.error);
+    }, [groceryList, user, listId]);
 
-        set(userGroceryRef, groceryList).catch(console.error);
-    }, [groceryList, user, listName]);
+    async function handleShare() {
+        if (!shareEmail.includes("@")) {
+            alert("Please enter a valid email");
+            return;
+        }
+        console.log("Invite:", shareEmail);
+
+        try {
+            const sanitizedEmail = shareEmail.replace(/\./g, ",");
+            const snap = await get(ref(db, `userEmails/${sanitizedEmail}`));
+            if (!snap.exists()) {
+                alert("No user found with this email");
+                return;
+            }
+            const invitedUid = snap.val();
+            console.log("Invited UID:", invitedUid);
+
+            await set(ref(db, `lists/${listId}/editors/${invitedUid}`), true);
+            await set(ref(db, `users/${invitedUid}/lists/${listId}`), true);
+            alert("List shared successfully");
+            setShareEmail("");
+            setShowShareForm(false);
+        } catch (err) {
+            alert("Failed to share list");
+            console.error("Error sharing list:", err);
+        }
+    }
 
     const priceRefs = useRef<(HTMLInputElement | null)[]>([]);
     return (
@@ -86,7 +107,7 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                     people={people}
                 ></TextInputAndButton>
             </header>
-            <h1 className="grocery-list-title">Grocery List:</h1>
+            <h1 className="list-title">Grocery List:</h1>
             <div
                 className="App-table"
                 style={{ "--num-people": people.length } as React.CSSProperties}
@@ -164,6 +185,31 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                     ))}
                 </div>
             </div>
+            <button
+                className="share-list-button"
+                onClick={() => setShowShareForm(true)}
+            >
+                Share
+            </button>
+            {showShareForm && (
+                <div className="share-form share-form-fixed">
+                    <input
+                        type="email"
+                        placeholder="Enter Email"
+                        value={shareEmail}
+                        onChange={(e) => setShareEmail(e.target.value)}
+                    />
+                    <button onClick={handleShare}>Invite</button>
+                    <button
+                        onClick={() => {
+                            setShowShareForm(false);
+                            setShareEmail("");
+                        }}
+                    >
+                        Cancel
+                    </button>
+                </div>
+            )}
             <UploadReciept
                 groceryList={groceryList}
                 setGroceryList={setGroceryList}

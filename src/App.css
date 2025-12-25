@@ -183,6 +183,38 @@ input[type="checkbox"] {
     background-color: #d97706;
 }
 
+/* ===== Share List Button (Top‑Right) ===== */
+.share-list-button {
+    position: fixed;
+    top: 20px;
+    right: 170px; /* places it left of Upload Receipt */
+    background-color: #22c55e;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 1em;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+}
+
+.share-list-button:hover {
+    background-color: #16a34a;
+}
+
+/* ===== Fixed Share Form ===== */
+.share-form-fixed {
+    position: fixed;
+    top: 70px;
+    right: 160px;
+    background: white;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+}
+
 /* ===== Dashboard Buttons ===== */
 
 .dashboard-new-list-btn {
@@ -312,4 +344,16 @@ input[type="checkbox"] {
 
 .dashboard-signout-btn:active {
     background-color: #b91c1c;
+}
+
+/* ===== Share Email Form ===== */
+
+.share-form {
+    display: flex;
+    gap: 8px;
+    margin: 10px 0;
+}
+
+.share-form input {
+    padding: 6px;
 }

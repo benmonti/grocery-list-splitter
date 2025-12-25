@@ -6,6 +6,7 @@ import * as rtdb from "firebase/database";
 import * as fbauth from "firebase/auth";
 import { ReceiptSplitter } from "./Components/ReceiptSplitter";
 import { Dashboard } from "./Components/Dashboard";
+import { getFunctions, httpsCallable } from "firebase/functions";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -34,12 +35,23 @@ function App(): React.JSX.Element {
 
     const handleGoogleLogin = async () => {
         try {
-            const result = await fbauth.signInWithPopup(auth, provider);
-            const user = result.user;
-            console.log("Logged in as:", user.displayName);
-            // You can write user data to the database if needed
-            const uid = user.uid;
-            await rtdb.set(rtdb.ref(db, `/users/${uid}/roles/user`), true);
+            // Sign in
+            await fbauth.signInWithPopup(auth, provider);
+
+            // Use auth.currentUser (guaranteed by Firebase)
+            const currentUser = auth.currentUser;
+
+            if (!currentUser?.email || !currentUser?.uid) return;
+
+            const functions = getFunctions(app);
+            const registerEmailFn = httpsCallable(functions, "registerEmail");
+            await registerEmailFn({ email: currentUser.email });
+
+            const sanitizedEmail = currentUser.email
+                .toLowerCase()
+                .replace(/\./g, ",");
+
+            console.log("Logged in as:", currentUser.displayName);
         } catch (err: any) {
             console.error(err.code, err.message);
             alert(err.message);
@@ -97,7 +109,7 @@ function App(): React.JSX.Element {
                         element={<Dashboard user={user} />}
                     />
                     <Route
-                        path="/grocery-lists/:listName"
+                        path="/grocery-lists/:listId"
                         element={<ReceiptSplitter user={user} />}
                     />
                 </Routes>

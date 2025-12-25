@@ -1,8 +1,12 @@
 import { Item } from "./item";
+import * as fbauth from "firebase/auth";
 
 export interface List {
+    id: string;
     name: string;
     groceryList: Item[];
+    editors: Record<string, true>;
+    createdBy: string;
 }
 
 export interface groceryListProps {
@@ -14,8 +18,11 @@ export interface groceryListProps {
 export function copyLists(lists: List[]) {
     const newLists: List[] = lists.map((list: List) => {
         const newList: List = {
+            id: list.id,
             name: list.name,
             groceryList: copyGroceryList(list.groceryList),
+            editors: { ...list.editors },
+            createdBy: list.createdBy,
         };
         return newList;
     });
