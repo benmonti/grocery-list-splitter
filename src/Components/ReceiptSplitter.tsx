@@ -58,39 +58,42 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                 setGroceryList(
                     Array.isArray(data.groceryList) ? data.groceryList : [],
                 );
-            }
+                const editorsObj = data.editors || {};
+                const editorUids = Object.keys(editorsObj);
 
-            const editorsObj = data.editors || {};
-            const editorUids = Object.keys(editorsObj);
+                let peoplePromises = editorUids.map(async (uid, idx) => {
+                    let userName = "_";
 
-            let peoplePromises = editorUids.map(async (uid, idx) => {
-                let userName = "_";
-
-                if (people[idx] && people[idx].name) {
-                    userName = people[idx].name;
-                } else {
-                    try {
-                        const profile = await getUserProfile(uid);
-                        const profileData = await profile;
-                        if (profileData?.name) {
-                            const nameArr = profileData.name.split(" ");
-                            userName = `${nameArr[0]}${nameArr[1] ? " " + nameArr[1][0] + "." : ""}`;
+                    if (people[idx] && people[idx].name) {
+                        userName = people[idx].name;
+                    } else {
+                        try {
+                            const profile = await getUserProfile(uid);
+                            const profileData = await profile;
+                            if (profileData?.name) {
+                                const nameArr = profileData.name.split(" ");
+                                userName = `${nameArr[0]}${nameArr[1] ? " " + nameArr[1][0] + "." : ""}`;
+                            }
+                        } catch (err) {
+                            console.error(
+                                "Profile fetch failed for uid",
+                                uid,
+                                err,
+                            );
                         }
-                    } catch (err) {
-                        console.error("Profile fetch failed for uid", uid, err);
                     }
-                }
 
-                return {
-                    name: userName,
-                    total: 0,
-                };
-            });
+                    return {
+                        name: userName,
+                        total: 0,
+                    };
+                });
 
-            let newPeople = await Promise.all(peoplePromises);
+                let newPeople = await Promise.all(peoplePromises);
 
-            newPeople = getTotals(newPeople, data.groceryList);
-            setPeople(newPeople);
+                newPeople = getTotals(newPeople, data.groceryList);
+                setPeople(newPeople);
+            }
 
             hasLoaded.current = true; // mark loaded AFTER onValue fires
         });
