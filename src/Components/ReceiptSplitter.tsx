@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, ChangeEvent } from "react";
 import { Item } from "../interfaces/item";
-import { Person } from "../interfaces/people";
+import { createNewPerson, Person } from "../interfaces/people";
 import { ChoosePeopleSlider } from "./ChoosePeopleSlider";
 import { CreateChoiceBoxes } from "./CreateChoiceBoxes";
 import { ItemEntry } from "./ItemEntry";
@@ -10,15 +10,20 @@ import { UploadReciept } from "./UploadReciept";
 import * as fbauth from "firebase/auth";
 import { app, db } from "../App";
 import { get, onValue, ref, set } from "firebase/database";
-import { useParams } from "react-router-dom";
-import { getFunctions, httpsCallable } from "firebase/functions";
+import { useLocation, useParams } from "react-router-dom";
+import {
+    getFunctions,
+    httpsCallable,
+    HttpsCallableResult,
+} from "firebase/functions";
+import { List } from "../interfaces/groceryList";
+import { getTotals } from "../interfaces/useCalculateSplits";
 
 export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
     const [groceryList, setGroceryList] = useState<Item[]>([]);
-    const [people, setPeople] = useState<Person[]>([
-        { total: 0, name: "" },
-        { total: 0, name: "" },
-    ]);
+    // const { state } = useLocation();
+    // const initialList: List = state?.list;
+    const [people, setPeople] = useState<Person[]>([]);
     const [showShareForm, setShowShareForm] = useState<boolean>(false);
     const [shareEmail, setShareEmail] = useState<string>("");
     const { listId } = useParams();
@@ -30,7 +35,7 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
         const listRef = ref(db, `lists/${listId}`);
 
         // Live updates
-        const unsubscribe = onValue(listRef, (snap) => {
+        const unsubscribe = onValue(listRef, async (snap) => {
             const data = snap.val();
             if (!data) {
                 // Initialize new list if it doesn't exist
@@ -42,16 +47,64 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                 };
                 set(listRef, newList);
                 setGroceryList([]);
+                setPeople([
+                    {
+                        name: user.displayName || "",
+                        total: 0,
+                    },
+                ]);
             } else {
                 setGroceryList(
                     Array.isArray(data.groceryList) ? data.groceryList : [],
                 );
             }
+
+            const editorsObj = data.editors || {};
+            const editorUids = Object.keys(editorsObj);
+
+            let peoplePromises = editorUids.map(async (uid) => {
+                const profile = getUserProfile(uid);
+                const nameArr: string[] = (await profile).name.split(" ");
+                const userName: string = `${nameArr[0]}${nameArr[1] ? " " + nameArr[1][0] + "." : ""}`;
+
+                return {
+                    name: userName ? userName : "_",
+                    total: 0,
+                };
+            });
+
+            let newPeople = await Promise.all(peoplePromises);
+
+            newPeople = getTotals(newPeople, data.groceryList);
+            setPeople(newPeople);
+
             hasLoaded.current = true; // mark loaded AFTER onValue fires
         });
 
         return () => unsubscribe();
     }, [user, listId]);
+
+    async function getUserProfile(uid: string) {
+        const idToken = await user?.getIdToken();
+
+        const response = await fetch(
+            `https://us-central1-grocery-list-splitter-e22fb.cloudfunctions.net/getUserProfile?uid=${uid}&listId=${listId}`,
+            {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${idToken}`,
+                    "Content-Type": "application/json",
+                },
+            },
+        );
+
+        if (!response.ok) throw new Error("Unauthorized or error");
+
+        const profile: Promise<{ email: string; name: string }> =
+            response.json();
+
+        return profile;
+    }
 
     // Writing local edits
     useEffect(() => {
@@ -59,8 +112,10 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
         if (!hasLoaded.current) return;
 
         const groceryRef = ref(db, `lists/${listId}/groceryList`);
+        const peopleRef = ref(db, `lists/${listId}/people`);
         set(groceryRef, groceryList).catch(console.error);
-    }, [groceryList, user, listId]);
+        set(peopleRef, people);
+    }, [groceryList, user, listId, people]);
 
     async function handleShare() {
         if (!shareEmail.includes("@")) {
@@ -71,13 +126,16 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
 
         try {
             const sanitizedEmail = shareEmail.replace(/\./g, ",");
-            const snap = await get(ref(db, `userEmails/${sanitizedEmail}`));
-            if (!snap.exists()) {
+            const emailSnap = await get(
+                ref(db, `userEmails/${sanitizedEmail}`),
+            );
+            if (!emailSnap.exists()) {
                 alert("No user found with this email");
                 return;
             }
-            const invitedUid = snap.val();
-            console.log("Invited UID:", invitedUid);
+
+            const invitedUid = emailSnap.val();
+            // console.log("Invited UID:", invitedUid);
 
             const functions = getFunctions(app);
             const shareListFn = httpsCallable(functions, "shareList");
@@ -85,9 +143,28 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                 listId,
                 invitedUid,
             });
-            alert("List shared successfully");
+
+            const profile = getUserProfile(invitedUid);
+
+            const nameArr: string[] = (await profile).name.split(" ");
+            const userName: string = `${nameArr[0]}${nameArr[1] ? " " + nameArr[1][0] + "." : ""}`;
+
+            await alert("List shared successfully");
             setShareEmail("");
             setShowShareForm(false);
+
+            const newPeople: Person[] = people.map((person: Person) => {
+                return { ...person };
+            });
+            newPeople.push({
+                name: userName ? userName : "_",
+                total: 0,
+            });
+
+            setPeople(newPeople);
+
+            const peopleRef = ref(db, `lists/${listId}/people`);
+            set(peopleRef, newPeople);
         } catch (err) {
             alert("Failed to share list");
             console.error("Error sharing list:", err);
@@ -97,14 +174,14 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
     const priceRefs = useRef<(HTMLInputElement | null)[]>([]);
     return (
         <div className="App">
-            <span className="set-people">
+            {/* <span className="set-people">
                 <ChoosePeopleSlider
                     people={people}
                     setPeople={setPeople}
                     groceryList={groceryList}
                     setGroceryList={setGroceryList}
                 ></ChoosePeopleSlider>
-            </span>
+            </span> */}
             <header className="App-input-box">
                 <TextInputAndButton
                     groceryList={groceryList}

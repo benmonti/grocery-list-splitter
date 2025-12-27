@@ -6,11 +6,11 @@ import { db, auth } from "../App";
 import { useLocation, useNavigate } from "react-router-dom";
 import { get, onValue, push, ref, set } from "firebase/database";
 import { useEffect } from "react";
+import { createNewPerson } from "../interfaces/people";
 
 export function Dashboard({ user }: { user: fbauth.User | null }) {
     const [lists, setLists] = useState<List[]>([]);
     const navigate = useNavigate();
-    const location = useLocation();
 
     useEffect(() => {
         if (!user) return;
@@ -51,8 +51,12 @@ export function Dashboard({ user }: { user: fbauth.User | null }) {
         const newGroceryList = {
             name: newName,
             groceryList: [],
-            editors: { [user.uid]: true } as Record<string, true>,
+            editors: { [user.uid]: { name: user.displayName || "" } } as Record<
+                string,
+                { name: string }
+            >,
             createdBy: user.uid,
+            people: [createNewPerson(user.displayName ? user.displayName : "")],
         };
 
         try {

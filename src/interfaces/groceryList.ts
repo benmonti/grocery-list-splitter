@@ -1,12 +1,14 @@
 import { Item } from "./item";
 import * as fbauth from "firebase/auth";
+import { Person } from "./people";
 
 export interface List {
     id: string;
     name: string;
     groceryList: Item[];
-    editors: Record<string, true>;
+    editors: Record<string, { name: string }>;
     createdBy: string;
+    people: Person[];
 }
 
 export interface groceryListProps {
@@ -23,6 +25,7 @@ export function copyLists(lists: List[]) {
             groceryList: copyGroceryList(list.groceryList),
             editors: { ...list.editors },
             createdBy: list.createdBy,
+            people: [...{ ...list.people }],
         };
         return newList;
     });

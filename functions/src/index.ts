@@ -11,7 +11,7 @@ import {setGlobalOptions} from "firebase-functions";
 // import { onRequest } from "firebase-functions/https";
 // import * as logger from "firebase-functions/logger";
 import * as admin from "firebase-admin";
-import {onCall, HttpsError} from "firebase-functions/v2/https";
+import {onCall, HttpsError, onRequest} from "firebase-functions/v2/https";
 
 admin.initializeApp();
 
@@ -32,6 +32,12 @@ export const registerEmail = onCall<
 
   const sanitizedEmail = email.toLowerCase().replace(/\./g, ",");
   await admin.database().ref(`userEmails/${sanitizedEmail}`).set(uid);
+
+  const displayName = request.auth?.token?.name || "";
+  await admin.database().ref(`users/${uid}/profile`).set({
+    name: displayName,
+    email: email,
+  });
 
   return {success: true};
 });
@@ -67,6 +73,48 @@ export const shareList = onCall<
     throw new HttpsError("internal", "Failed to share list");
   }
 });
+
+
+export const getUserProfile = onRequest(
+  {cors: true},
+  async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization || "";
+      // Must be in the form "Bearer <token>"
+      const match = authHeader.match(/^Bearer (.*)$/);
+      if (!match) {
+        res.status(401).json({error: "Unauthorized - no token"});
+        return;
+      }
+
+      const idToken = match[1];
+      const decodedToken = await admin.auth().verifyIdToken(idToken);
+
+      // enforce that users can only fetch profiles if they are editors
+      const listEditorSnap = await admin.database()
+        .ref(`lists/${req.query.listId}/editors/${decodedToken.uid}`)
+        .once("value");
+
+      if (!listEditorSnap.exists()) {
+        res.status(403).json({error: "Forbidden"});
+        return;
+      }
+
+      const uid = req.query.uid as string;
+      if (!uid) {
+        res.status(400).json({error: "Missing uid"});
+        return;
+      }
+
+      const userRecord = await admin.database()
+        .ref(`users/${uid}/profile`)
+        .once("value");
+      res.status(200).json(userRecord.val());
+    } catch (err) {
+      res.status(500).json({erros: (err as Error)?.message || String(err)});
+    }
+  }
+);
 // For cost control, you can set the maximum number of containers that can be
 // running at the same time. This helps mitigate the impact of unexpected
 // traffic spikes by instead downgrading performance. This limit is a
