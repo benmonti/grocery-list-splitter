@@ -44,6 +44,7 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                     },
                     createdBy: user.uid,
                     people: [createNewPerson(user?.displayName || "_")],
+                    id: listId,
                 };
                 set(listRef, newList);
                 setGroceryList([]);

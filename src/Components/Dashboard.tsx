@@ -48,23 +48,25 @@ export function Dashboard({ user }: { user: fbauth.User | null }) {
     async function addList() {
         if (!user) return;
         const newName = `List-${lists.length + 1}`;
-        const newGroceryList: List = {
-            name: newName,
-            groceryList: [],
-            editors: { [user.uid]: { name: user.displayName || "" } } as Record<
-                string,
-                { name: string }
-            >,
-            createdBy: user.uid,
-            people: [createNewPerson(user.displayName ? user.displayName : "")],
-        };
 
         try {
             const listRef = push(ref(db, `lists`));
             const listId = listRef.key!;
+            const newGroceryList: List = {
+                name: newName,
+                groceryList: [],
+                editors: {
+                    [user.uid]: { name: user.displayName || "" },
+                } as Record<string, { name: string }>,
+                createdBy: user.uid,
+                people: [
+                    createNewPerson(user.displayName ? user.displayName : ""),
+                ],
+                id: listId,
+            };
             await set(listRef, newGroceryList);
             await set(ref(db, `users/${user.uid}/lists/${listId}`), true);
-            setLists((prev) => [...prev, { id: listId, ...newGroceryList }]);
+            setLists((prev) => [...prev, { ...newGroceryList }]);
         } catch (error) {
             console.error("Failed to write list:", error);
         }

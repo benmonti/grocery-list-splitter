@@ -8,6 +8,7 @@ export interface List {
     editors: Record<string, { name: string }>;
     createdBy: string;
     people: Person[];
+    id: string;
 }
 
 export interface groceryListProps {
