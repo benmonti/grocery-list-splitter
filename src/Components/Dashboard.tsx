@@ -48,7 +48,7 @@ export function Dashboard({ user }: { user: fbauth.User | null }) {
     async function addList() {
         if (!user) return;
         const newName = `List-${lists.length + 1}`;
-        const newGroceryList = {
+        const newGroceryList: List = {
             name: newName,
             groceryList: [],
             editors: { [user.uid]: { name: user.displayName || "" } } as Record<

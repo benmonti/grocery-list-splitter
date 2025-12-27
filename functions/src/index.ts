@@ -57,10 +57,16 @@ export const shareList = onCall<
 
   try {
     // Add invitedUid to editors
+    const profile = await admin.database()
+      .ref(`users/${invitedUid}/profile`)
+      .once("value");
+    let userName = profile.val();
+    userName = userName?.name || "";
+
     await admin
       .database()
-      .ref(`lists/${listId}/editors/${invitedUid}`)
-      .set(true);
+      .ref(`lists/${listId}/editors/${invitedUid}/name`)
+      .set(userName);
 
     // Add list to the invited user’s list collection
     await admin

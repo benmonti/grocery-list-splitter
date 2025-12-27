@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, ChangeEvent } from "react";
 import { Item } from "../interfaces/item";
 import { createNewPerson, Person } from "../interfaces/people";
-import { ChoosePeopleSlider } from "./ChoosePeopleSlider";
 import { CreateChoiceBoxes } from "./CreateChoiceBoxes";
 import { ItemEntry } from "./ItemEntry";
 import { PriceBox } from "./PriceBox";
@@ -10,12 +9,8 @@ import { UploadReciept } from "./UploadReciept";
 import * as fbauth from "firebase/auth";
 import { app, db } from "../App";
 import { get, onValue, ref, set } from "firebase/database";
-import { useLocation, useParams } from "react-router-dom";
-import {
-    getFunctions,
-    httpsCallable,
-    HttpsCallableResult,
-} from "firebase/functions";
+import { useParams } from "react-router-dom";
+import { getFunctions, httpsCallable } from "firebase/functions";
 import { List } from "../interfaces/groceryList";
 import { getTotals } from "../interfaces/useCalculateSplits";
 
@@ -39,11 +34,16 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
             const data = snap.val();
             if (!data) {
                 // Initialize new list if it doesn't exist
-                const newList = {
+                const newList: List = {
                     name: `List-${Date.now()}`,
                     groceryList: [],
-                    editors: { [user.uid]: true },
+                    editors: {
+                        [user.uid]: {
+                            name: user.displayName ? user.displayName : "_",
+                        },
+                    },
                     createdBy: user.uid,
+                    people: [createNewPerson(user?.displayName || "_")],
                 };
                 set(listRef, newList);
                 setGroceryList([]);
@@ -62,13 +62,26 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
             const editorsObj = data.editors || {};
             const editorUids = Object.keys(editorsObj);
 
-            let peoplePromises = editorUids.map(async (uid) => {
-                const profile = getUserProfile(uid);
-                const nameArr: string[] = (await profile).name.split(" ");
-                const userName: string = `${nameArr[0]}${nameArr[1] ? " " + nameArr[1][0] + "." : ""}`;
+            let peoplePromises = editorUids.map(async (uid, idx) => {
+                let userName = "_";
+
+                if (people[idx] && people[idx].name) {
+                    userName = people[idx].name;
+                } else {
+                    try {
+                        const profile = await getUserProfile(uid);
+                        const profileData = await profile;
+                        if (profileData?.name) {
+                            const nameArr = profileData.name.split(" ");
+                            userName = `${nameArr[0]}${nameArr[1] ? " " + nameArr[1][0] + "." : ""}`;
+                        }
+                    } catch (err) {
+                        console.error("Profile fetch failed for uid", uid, err);
+                    }
+                }
 
                 return {
-                    name: userName ? userName : "_",
+                    name: userName,
                     total: 0,
                 };
             });
@@ -248,6 +261,8 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                                     people={people}
                                     setPeople={setPeople}
                                     index={i}
+                                    user={user}
+                                    listId={listId}
                                 ></CreateChoiceBoxes>
                             </div>
                         ))}

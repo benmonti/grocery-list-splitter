@@ -3,7 +3,6 @@ import * as fbauth from "firebase/auth";
 import { Person } from "./people";
 
 export interface List {
-    id: string;
     name: string;
     groceryList: Item[];
     editors: Record<string, { name: string }>;
