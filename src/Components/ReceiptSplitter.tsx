@@ -16,6 +16,7 @@ import { getTotals } from "../interfaces/useCalculateSplits";
 
 export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
     const [groceryList, setGroceryList] = useState<Item[]>([]);
+    const [title, setTitle] = useState<string>("");
     // const { state } = useLocation();
     // const initialList: List = state?.list;
     const [people, setPeople] = useState<Person[]>([]);
@@ -32,10 +33,11 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
         // Live updates
         const unsubscribe = onValue(listRef, async (snap) => {
             const data = snap.val();
+            let listName: string = `List-${Date.now()}`;
             if (!data) {
                 // Initialize new list if it doesn't exist
                 const newList: List = {
-                    name: `List-${Date.now()}`,
+                    name: listName,
                     groceryList: [],
                     editors: {
                         [user.uid]: {
@@ -58,6 +60,7 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                 setGroceryList(
                     Array.isArray(data.groceryList) ? data.groceryList : [],
                 );
+                listName = data.name;
                 const editorsObj = data.editors || {};
                 const editorUids = Object.keys(editorsObj);
 
@@ -94,6 +97,7 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                 newPeople = getTotals(newPeople, data.groceryList);
                 setPeople(newPeople);
             }
+            setTitle();
 
             hasLoaded.current = true; // mark loaded AFTER onValue fires
         });
@@ -206,7 +210,7 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                     people={people}
                 ></TextInputAndButton>
             </header>
-            <h1 className="list-title">Grocery List:</h1>
+            <h1 className="list-title">{}</h1>
             <div
                 className="App-table"
                 style={{ "--num-people": people.length } as React.CSSProperties}
