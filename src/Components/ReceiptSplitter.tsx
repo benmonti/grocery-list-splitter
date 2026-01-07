@@ -9,7 +9,7 @@ import { UploadReciept } from "./UploadReciept";
 import * as fbauth from "firebase/auth";
 import { app, db } from "../App";
 import { get, onValue, ref, set } from "firebase/database";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { List } from "../interfaces/groceryList";
 import { getTotals } from "../interfaces/useCalculateSplits";
@@ -25,6 +25,7 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const { listId } = useParams();
     const hasLoaded = useRef(false);
+    const navigate = useNavigate();
 
     useEffect(() => {
         if (!user || !listId) return;
@@ -366,6 +367,14 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                 groceryList={groceryList}
                 setGroceryList={setGroceryList}
             ></UploadReciept>
+            <span
+                className="dashboard-button"
+                onClick={() => {
+                    navigate(`/grocery-lists/`);
+                }}
+            >
+                Dashboard
+            </span>
         </div>
     );
 }

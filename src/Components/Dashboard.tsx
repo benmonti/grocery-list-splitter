@@ -3,7 +3,7 @@ import { List } from "../interfaces/groceryList";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import * as fbauth from "firebase/auth";
 import { db, auth } from "../App";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { get, onValue, push, ref, set } from "firebase/database";
 import { useEffect } from "react";
 import { createNewPerson } from "../interfaces/people";
