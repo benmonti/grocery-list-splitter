@@ -7,6 +7,7 @@ import * as fbauth from "firebase/auth";
 import { ReceiptSplitter } from "./Components/ReceiptSplitter";
 import { Dashboard } from "./Components/Dashboard";
 import { getFunctions, httpsCallable } from "firebase/functions";
+
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -84,7 +85,7 @@ function App(): React.JSX.Element {
                     }}
                 >
                     <img
-                        src="/google-logo.png"
+                        src={`${import.meta.env.BASE_URL}google-logo.png`}
                         alt="Google"
                         style={{
                             width: "10%",

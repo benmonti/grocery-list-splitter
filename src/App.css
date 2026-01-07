@@ -357,3 +357,18 @@ input[type="checkbox"] {
 .share-form input {
     padding: 6px;
 }
+
+.title-input {
+    all: unset;              /* removes ALL default input styling */
+    font: inherit;           /* match h1 exactly */
+    color: inherit;
+    cursor: text;
+}
+
+.title-text {
+    cursor: pointer;
+}
+
+.title-text:hover {
+    text-decoration: underline;
+}

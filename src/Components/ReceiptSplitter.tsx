@@ -22,6 +22,7 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
     const [people, setPeople] = useState<Person[]>([]);
     const [showShareForm, setShowShareForm] = useState<boolean>(false);
     const [shareEmail, setShareEmail] = useState<string>("");
+    const [isEditingTitle, setIsEditingTitle] = useState(false);
     const { listId } = useParams();
     const hasLoaded = useRef(false);
 
@@ -97,13 +98,13 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                 newPeople = getTotals(newPeople, data.groceryList);
                 setPeople(newPeople);
             }
-            setTitle(listName);
+            if (!isEditingTitle) setTitle(listName);
 
             hasLoaded.current = true; // mark loaded AFTER onValue fires
         });
 
         return () => unsubscribe();
-    }, [user, listId]);
+    }, [user, listId, isEditingTitle]);
 
     async function getUserProfile(uid: string) {
         const idToken = await user?.getIdToken();
@@ -210,7 +211,47 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                     people={people}
                 ></TextInputAndButton>
             </header>
-            <h1 className="list-title">{title}</h1>
+            <h1
+                className="list-title"
+                style={{ paddingLeft: "170px", cursor: "pointer" }}
+            >
+                <span>Title: </span>
+
+                {isEditingTitle ?
+                    <input
+                        type="text"
+                        value={title}
+                        autoFocus
+                        onChange={(e) => setTitle(e.target.value)}
+                        onBlur={() => {
+                            setIsEditingTitle(false);
+                            if (user && listId) {
+                                const nameRef = ref(db, `lists/${listId}/name`);
+                                set(nameRef, title);
+                            }
+                        }}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                                setIsEditingTitle(false);
+                                if (user && listId) {
+                                    const nameRef = ref(
+                                        db,
+                                        `lists/${listId}/name`,
+                                    );
+                                    set(nameRef, title);
+                                }
+                            }
+                        }}
+                        className="title-input"
+                    />
+                :   <span
+                        onClick={() => setIsEditingTitle(true)}
+                        className="title-text"
+                    >
+                        {title || "Untitled"}
+                    </span>
+                }
+            </h1>
             <div
                 className="App-table"
                 style={{ "--num-people": people.length } as React.CSSProperties}
@@ -303,6 +344,12 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                         placeholder="Enter Email"
                         value={shareEmail}
                         onChange={(e) => setShareEmail(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                                handleShare();
+                                setShareEmail("");
+                            }
+                        }}
                     />
                     <button onClick={handleShare}>Invite</button>
                     <button
