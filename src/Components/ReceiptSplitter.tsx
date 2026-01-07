@@ -97,7 +97,7 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                 newPeople = getTotals(newPeople, data.groceryList);
                 setPeople(newPeople);
             }
-            setTitle();
+            setTitle(listName);
 
             hasLoaded.current = true; // mark loaded AFTER onValue fires
         });
@@ -210,7 +210,7 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                     people={people}
                 ></TextInputAndButton>
             </header>
-            <h1 className="list-title">{}</h1>
+            <h1 className="list-title">{title}</h1>
             <div
                 className="App-table"
                 style={{ "--num-people": people.length } as React.CSSProperties}
