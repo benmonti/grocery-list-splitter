@@ -27,12 +27,18 @@ export function Dashboard({ user }: { user: fbauth.User | null }) {
             const loadedLists: List[] = [];
             for (const listId of listIds) {
                 const listSnap = await get(ref(db, `lists/${listId}`));
-                if (listSnap.exists()) {
-                    loadedLists.push({
-                        id: listId,
-                        ...listSnap.val(),
-                    });
+                if (!listSnap.exists() || listSnap.val() === null) {
+                    // optionally clean up the orphan reference
+                    await set(
+                        ref(db, `users/${user.uid}/lists/${listId}`),
+                        null,
+                    );
+                    continue;
                 }
+                loadedLists.push({
+                    id: listId,
+                    ...listSnap.val(),
+                });
             }
             setLists(loadedLists);
         });
@@ -177,10 +183,18 @@ export function Dashboard({ user }: { user: fbauth.User | null }) {
                                                     <button
                                                         className="list-delete-btn"
                                                         onClick={(e) => {
+                                                            e.stopPropagation();
+
+                                                            const confirmDelete =
+                                                                window.confirm(
+                                                                    `Are you sure you want to delete ${list.name}?`,
+                                                                );
+                                                            if (!confirmDelete)
+                                                                return;
+
                                                             deleteList(
                                                                 lists[index].id,
                                                             );
-                                                            e.stopPropagation();
                                                         }}
                                                     >
                                                         Delete List
