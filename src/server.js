@@ -79,7 +79,7 @@ app.post(
             const response = await fetch(`${BACKEND_URL}/api/generate`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ base64Image }),
+                body: JSON.stringify({ image: base64Image }),
             });
 
             const data = await response.json();
@@ -103,7 +103,7 @@ app.post(
             if (err.code === "LIMIT_FILE_SIZE") {
                 return res
                     .status(413)
-                    .json({ error: "File too large (max 5MB allowed)." });
+                    .json({ error: "File too large (max 25MB allowed)." });
             }
         }
         next(err);
