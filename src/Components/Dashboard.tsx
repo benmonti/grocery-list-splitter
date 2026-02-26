@@ -10,20 +10,36 @@ import { createNewPerson } from "../interfaces/people";
 
 export function Dashboard({ user }: { user: fbauth.User | null }) {
     const [lists, setLists] = useState<List[]>([]);
+    const [refreshKey, setRefreshKey] = useState(0);
+
     const navigate = useNavigate();
+
+    function sleep(ms: number) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+    }
 
     useEffect(() => {
         if (!user) return;
+
+        async function delay() {
+            await sleep(5000);
+        }
 
         const userListsRef = ref(db, `users/${user.uid}/lists`);
 
         const unsubscribe = onValue(userListsRef, async (snapshot) => {
             const data = snapshot.val() || {};
+            if (!data) {
+                setLists([]);
+                return;
+            }
+
             const listIds: string[] = Object.keys(data);
             if (listIds.length === 0) {
                 setLists([]);
                 return;
             }
+
             const loadedLists: List[] = [];
             for (const listId of listIds) {
                 const listSnap = await get(ref(db, `lists/${listId}`));
@@ -45,7 +61,7 @@ export function Dashboard({ user }: { user: fbauth.User | null }) {
 
         // Cleanup the listener when the component unmounts
         return () => unsubscribe();
-    }, [user]);
+    }, [user, refreshKey]);
 
     const handleSignOut = async () => {
         await fbauth.signOut(auth);
@@ -94,20 +110,23 @@ export function Dashboard({ user }: { user: fbauth.User | null }) {
 
     async function clearLists() {
         if (!user) return;
-        try {
-            const userListsRef = ref(db, `users/${user.uid}/lists`);
 
-            const unsubscribe = onValue(userListsRef, async (snapshot) => {
-                const data = snapshot.val() || {};
-                const listIds: string[] = Object.keys(data);
-                for (const listId in listIds) {
-                    await Promise.all([
-                        set(ref(db, `lists/${listId}`), null),
-                        set(ref(db, `users/${user.uid}/lists/${listId}`), null),
-                    ]);
-                }
-                return () => unsubscribe();
-            });
+        try {
+            const userListsSnapshot = await get(
+                ref(db, `users/${user.uid}/lists`),
+            );
+            const data = userListsSnapshot.val() || {};
+            const listIds = Object.keys(data);
+
+            const deletePromises = listIds.map((listId) =>
+                Promise.all([
+                    set(ref(db, `lists/${listId}`), null),
+                    set(ref(db, `users/${user.uid}/lists/${listId}`), null),
+                ]),
+            );
+
+            await Promise.all(deletePromises);
+            setRefreshKey((prev) => prev + 1);
         } catch (err) {
             console.error("Failed to clear lists:", err);
         }
@@ -134,7 +153,16 @@ export function Dashboard({ user }: { user: fbauth.User | null }) {
                 <div className="dashboard-new-list-btn" onClick={addList}>
                     New List
                 </div>
-                <div className="dashboard-clear-lists-btn" onClick={clearLists}>
+                <div
+                    className="dashboard-clear-lists-btn"
+                    onClick={() => {
+                        const confirmClear = window.confirm(
+                            `Are you sure you want to delete all lists?`,
+                        );
+                        if (!confirmClear) return;
+                        clearLists();
+                    }}
+                >
                     Clear Lists
                 </div>
             </div>
