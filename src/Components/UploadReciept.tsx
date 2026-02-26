@@ -1,6 +1,7 @@
 import React, { useRef } from "react";
 import { Item } from "../interfaces/item";
 import { BACKEND_URL } from "../url";
+import { Form } from "react-router-dom";
 
 export function UploadReciept({
     groceryList,
@@ -41,12 +42,12 @@ export function UploadReciept({
         const file = event.target.files?.[0];
         if (!file) return;
 
-        const base64Image = await toBase64(file);
+        const formData = new FormData();
+        formData.append("file", file);
 
-        const res = await fetch(`${BACKEND_URL}/api/proxy-generate`, {
+        const res = await fetch(`${BACKEND_URL}/api/upload`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ image: base64Image }),
+            body: formData,
         });
 
         const data = await res.json();

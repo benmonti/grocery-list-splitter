@@ -3,6 +3,9 @@ import dotenv from "dotenv";
 import cors from "cors";
 import { getGeminiResponse } from "./ai.js";
 import { BACKEND_URL } from "./url.js";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 
 dotenv.config();
 
@@ -46,28 +49,65 @@ app.post("/api/generate", async (req, res) => {
     }
 });
 
-app.post("/api/proxy-generate", async (req, res) => {
-    try {
-        const { image } = req.body;
-        if (!image) return res.status(400).json({ error: "No image provided" });
-
-        console.log("Received image length:", image.length);
-
-        // Call the local AI endpoint instead of React dev server
-        const response = await fetch(`${BACKEND_URL}/api/generate`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ image }),
-        });
-
-        const data = await response.json();
-        res.json(data);
-    } catch (err) {
-        console.error("Error in /api/proxy-generate:", err);
-        res.status(500).json({
-            error: "Failed to fetch from local AI endpoint",
-        });
-    }
+const storage = multer.diskStorage({
+    destination: "./uploads/",
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + path.extname(file.originalname));
+    },
 });
+
+const upload = multer({
+    storage,
+    limits: { fileSize: 25 * 1024 * 1024, files: 1 },
+}); // Limit to 5MB
+
+app.post(
+    "/api/upload",
+    upload.single("file"),
+    async (req, res) => {
+        try {
+            if (!req.file) {
+                return res.status(400).json({ error: "No file uploaded" });
+            }
+
+            const filePath = req.file.path;
+            const fileBuffer = fs.readFileSync(filePath);
+
+            const base64Image = fileBuffer.toString("base64");
+            console.log("Received image length:", base64Image.length);
+
+            const response = await fetch(`${BACKEND_URL}/api/generate`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ base64Image }),
+            });
+
+            const data = await response.json();
+
+            fs.unlinkSync(filePath, (err) => {
+                if (err) {
+                    console.error("Failed to delete upload:", err);
+                }
+            }); // Clean up uploaded file
+
+            res.json(data);
+        } catch (err) {
+            console.error("Error in /api/upload:", err);
+            res.status(500).json({
+                error: "Failed to process uploaded file",
+            });
+        }
+    },
+    (err, req, res, next) => {
+        if (err instanceof multer.MulterError) {
+            if (err.code === "LIMIT_FILE_SIZE") {
+                return res
+                    .status(413)
+                    .json({ error: "File too large (max 5MB allowed)." });
+            }
+        }
+        next(err);
+    },
+);
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
