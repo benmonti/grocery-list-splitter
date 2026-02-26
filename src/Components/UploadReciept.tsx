@@ -15,14 +15,15 @@ export function UploadReciept({
     function handleButtonClick() {
         fileInputRef.current?.click(); // trigger the hidden file input
     }
-    function toBase64(file: File): Promise<string> {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file); // converts to base64
-            reader.onload = () => resolve(reader.result as string);
-            reader.onerror = (error) => reject(error);
-        });
-    }
+
+    // function toBase64(file: File): Promise<string> {
+    //     return new Promise((resolve, reject) => {
+    //         const reader = new FileReader();
+    //         reader.readAsDataURL(file); // converts to base64
+    //         reader.onload = () => resolve(reader.result as string);
+    //         reader.onerror = (error) => reject(error);
+    //     });
+    // }
 
     function extractJsonArray(text: string): string | null {
         // look for the first `[` and the last `]`
