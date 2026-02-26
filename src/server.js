@@ -6,6 +6,11 @@ import { BACKEND_URL } from "./url.js";
 
 dotenv.config();
 
+const key = process.env.GEMINI_API_KEY;
+if (!key) {
+    throw new Error("Missing GEMINI_API_KEY");
+}
+
 const PORT = process.env.PORT || 3001;
 
 const app = express();
