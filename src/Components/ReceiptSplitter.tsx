@@ -26,6 +26,9 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
     const { listId } = useParams();
     const hasLoaded = useRef(false);
     const navigate = useNavigate();
+    const profileCache = useRef<
+        Record<string, { name: string; email: string }>
+    >({});
 
     useEffect(() => {
         if (!user || !listId) return;
@@ -69,23 +72,26 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                 let peoplePromises = editorUids.map(async (uid, idx) => {
                     let userName = "_";
 
-                    if (people[idx] && people[idx].name) {
-                        userName = people[idx].name;
-                    } else {
-                        try {
-                            const profile = await getUserProfile(uid);
-                            const profileData = await profile;
-                            if (profileData?.name) {
-                                const nameArr = profileData.name.split(" ");
+                    try {
+                        // Use cached profile if available
+                        if (profileCache.current[uid]) {
+                            const cached = profileCache.current[uid];
+                            if (cached.name) {
+                                const nameArr = cached.name.split(" ");
                                 userName = `${nameArr[0]}${nameArr[1] ? " " + nameArr[1][0] + "." : ""}`;
                             }
-                        } catch (err) {
-                            console.error(
-                                "Profile fetch failed for uid",
-                                uid,
-                                err,
-                            );
+                        } else {
+                            const profileData = await getUserProfile(uid);
+                            if (profileData) {
+                                profileCache.current[uid] = profileData; // cache it
+                                if (profileData.name) {
+                                    const nameArr = profileData.name.split(" ");
+                                    userName = `${nameArr[0]}${nameArr[1] ? " " + nameArr[1][0] + "." : ""}`;
+                                }
+                            }
                         }
+                    } catch (err) {
+                        console.error("Profile fetch failed for uid", uid, err);
                     }
 
                     return {
@@ -123,8 +129,7 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
 
         if (!response.ok) throw new Error("Unauthorized or error");
 
-        const profile: Promise<{ email: string; name: string }> =
-            response.json();
+        const profile: { email: string; name: string } = await response.json();
 
         return profile;
     }
@@ -167,9 +172,9 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                 invitedUid,
             });
 
-            const profile = getUserProfile(invitedUid);
+            const profile = await getUserProfile(invitedUid);
 
-            const nameArr: string[] = (await profile).name.split(" ");
+            const nameArr: string[] = profile.name.split(" ");
             const userName: string = `${nameArr[0]}${nameArr[1] ? " " + nameArr[1][0] + "." : ""}`;
 
             await alert("List shared successfully");

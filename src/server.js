@@ -59,7 +59,7 @@ const storage = multer.diskStorage({
 const upload = multer({
     storage,
     limits: { fileSize: 25 * 1024 * 1024, files: 1 },
-}); // Limit to 5MB
+}); // Limit to 25MB
 
 app.post(
     "/api/upload",
