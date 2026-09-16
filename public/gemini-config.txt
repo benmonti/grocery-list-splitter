@@ -8,7 +8,9 @@ an item in the following format:
   "people": [false, false, ...]
 }
 
-1. name should be the exact item name from the receipt.
+1. name should be the exact item name from the receipt. If there are duplicates of an item,
+    the items should be combined into 1 entry and the price for that entry should be the 
+    prices of each duplicate added together after discounts.
 2. price should be the numeric value of the item minus any discounts.
 3. people should be an array of false values, one for 
     each person (assume 2 people for example if not specified).
