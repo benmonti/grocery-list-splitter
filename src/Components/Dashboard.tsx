@@ -11,52 +11,44 @@ import { createNewPerson } from "../interfaces/people";
 export function Dashboard({ user }: { user: fbauth.User | null }) {
     const [lists, setLists] = useState<List[]>([]);
     const [refreshKey, setRefreshKey] = useState(0);
+    const [isLoadingLists, setIsLoadingLists] = useState(true);
 
     const navigate = useNavigate();
 
-    function sleep(ms: number) {
-        return new Promise((resolve) => setTimeout(resolve, ms));
-    }
-
     useEffect(() => {
-        if (!user) return;
-
-        async function delay() {
-            await sleep(5000);
+        if (!user) {
+            setIsLoadingLists(false);
+            return;
         }
 
         const userListsRef = ref(db, `users/${user.uid}/lists`);
 
         const unsubscribe = onValue(userListsRef, async (snapshot) => {
-            const data = snapshot.val() || {};
-            if (!data) {
-                setLists([]);
-                return;
-            }
+            try {
+                const data = snapshot.val() || {};
+                const listIds: string[] = Object.keys(data);
+                const loadedLists: List[] = [];
 
-            const listIds: string[] = Object.keys(data);
-            if (listIds.length === 0) {
-                setLists([]);
-                return;
-            }
-
-            const loadedLists: List[] = [];
-            for (const listId of listIds) {
-                const listSnap = await get(ref(db, `lists/${listId}`));
-                if (!listSnap.exists() || listSnap.val() === null) {
-                    // optionally clean up the orphan reference
-                    await set(
-                        ref(db, `users/${user.uid}/lists/${listId}`),
-                        null,
-                    );
-                    continue;
+                for (const listId of listIds) {
+                    const listSnap = await get(ref(db, `lists/${listId}`));
+                    if (!listSnap.exists() || listSnap.val() === null) {
+                        await set(
+                            ref(db, `users/${user.uid}/lists/${listId}`),
+                            null,
+                        );
+                        continue;
+                    }
+                    loadedLists.push({
+                        id: listId,
+                        ...listSnap.val(),
+                    });
                 }
-                loadedLists.push({
-                    id: listId,
-                    ...listSnap.val(),
-                });
+                setLists(loadedLists);
+            } catch (error) {
+                console.error("Failed to load grocery lists:", error);
+            } finally {
+                setIsLoadingLists(false);
             }
-            setLists(loadedLists);
         });
 
         // Cleanup the listener when the component unmounts
@@ -168,7 +160,13 @@ export function Dashboard({ user }: { user: fbauth.User | null }) {
                 </button>
             </div>
             <div className="list-wrapper">
-                {lists.length === 0 && (
+                {isLoadingLists && (
+                    <div className="loading-status" role="status" aria-live="polite">
+                        <span className="loading-spinner small" aria-hidden="true" />
+                        Loading your lists…
+                    </div>
+                )}
+                {!isLoadingLists && lists.length === 0 && (
                     <div className="empty-state">
                         <span className="empty-state-icon" aria-hidden="true">
                             +

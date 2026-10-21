@@ -1,7 +1,6 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { Item } from "../interfaces/item";
 import { BACKEND_URL } from "../url";
-import { Form } from "react-router-dom";
 
 export function UploadReciept({
     groceryList,
@@ -11,6 +10,7 @@ export function UploadReciept({
     setGroceryList: (newList: Item[]) => void;
 }): React.JSX.Element {
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [isProcessing, setIsProcessing] = useState(false);
 
     function handleButtonClick() {
         fileInputRef.current?.click(); // trigger the hidden file input
@@ -43,40 +43,42 @@ export function UploadReciept({
         const file = event.target.files?.[0];
         if (!file) return;
 
-        const formData = new FormData();
-        formData.append("file", file);
+        setIsProcessing(true);
 
-        const res = await fetch(`${BACKEND_URL}/api/upload`, {
-            method: "POST",
-            body: formData,
-        });
-
-        const data = await res.json();
-
-        // 🔍 LOG THE FULL BACKEND RESPONSE
-        console.log("FULL BACKEND RESPONSE:", data);
-
-        const aiText: string = data?.message || "No AI Response";
-        const jsonString = extractJsonArray(aiText);
-
-        if (!jsonString) {
-            alert("AI response did not contain a JSON array");
-            return;
-        }
-        // 🔍 LOG EXACTLY WHAT YOU PARSE
-        console.log("AI TEXT (raw):", aiText);
-
-        // Validate JSON before parsing
-        let newGroceryList: Item[] = [];
         try {
-            newGroceryList = JSON.parse(jsonString);
-        } catch (err) {
-            console.error("AI returned invalid JSON:", jsonString);
-            alert("Failed to parse AI response. Response: " + jsonString);
-            return;
-        }
+            const formData = new FormData();
+            formData.append("file", file);
 
-        setGroceryList(newGroceryList);
+            const res = await fetch(`${BACKEND_URL}/api/upload`, {
+                method: "POST",
+                body: formData,
+            });
+
+            if (!res.ok) {
+                throw new Error("Receipt processing failed");
+            }
+
+            const data = await res.json();
+            const aiText: string = data?.message || "No AI Response";
+            const jsonString = extractJsonArray(aiText);
+
+            if (!jsonString) {
+                throw new Error("Receipt response did not contain a grocery list");
+            }
+
+            const newGroceryList: Item[] = JSON.parse(jsonString);
+            setGroceryList(newGroceryList);
+        } catch (error) {
+            console.error("Receipt processing failed:", error);
+            alert(
+                error instanceof Error ?
+                    error.message
+                :   "Unable to process this receipt",
+            );
+        } finally {
+            setIsProcessing(false);
+            event.target.value = "";
+        }
     }
 
     return (
@@ -85,6 +87,7 @@ export function UploadReciept({
                 type="button"
                 onClick={handleButtonClick}
                 className="upload-receipt-button"
+                disabled={isProcessing}
             >
                 Upload Reciept
             </button>
@@ -94,6 +97,18 @@ export function UploadReciept({
                 onChange={uploadRecieptToGemini}
                 style={{ display: "none" }}
             />
+            {isProcessing && (
+                <div className="loading-overlay" role="status" aria-live="polite">
+                    <div className="loading-card">
+                        <span className="loading-spinner" aria-hidden="true" />
+                        <h2>Reading your receipt</h2>
+                        <p>
+                            We&apos;re turning the items and prices into an
+                            editable list.
+                        </p>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

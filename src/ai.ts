@@ -5,8 +5,6 @@ import * as fs from "fs";
 const FILE_PATH: string = "public/gemini-config.txt";
 dotenv.config();
 
-console.log(`API Key Is ${process.env.GEMINI_API_KEY}`);
-
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 function stripBase64Prefix(dataUrl: string): string {
