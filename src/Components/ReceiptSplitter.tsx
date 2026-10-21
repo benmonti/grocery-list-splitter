@@ -23,94 +23,115 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
     const [showShareForm, setShowShareForm] = useState<boolean>(false);
     const [shareEmail, setShareEmail] = useState<string>("");
     const [isEditingTitle, setIsEditingTitle] = useState(false);
+    const [isLoadingList, setIsLoadingList] = useState(true);
     const { listId } = useParams();
     const hasLoaded = useRef(false);
+    const loadingListId = useRef<string | undefined>(undefined);
     const navigate = useNavigate();
     const profileCache = useRef<
         Record<string, { name: string; email: string }>
     >({});
 
     useEffect(() => {
-        if (!user || !listId) return;
+        if (!user || !listId) {
+            setIsLoadingList(false);
+            return;
+        }
+
+        if (loadingListId.current !== listId) {
+            loadingListId.current = listId;
+            hasLoaded.current = false;
+            setIsLoadingList(true);
+        }
 
         const listRef = ref(db, `lists/${listId}`);
+        let isActive = true;
 
         // Live updates
         const unsubscribe = onValue(listRef, async (snap) => {
-            const data = snap.val();
-            let listName: string = `List-${Date.now()}`;
-            if (!data) {
-                // Initialize new list if it doesn't exist
-                const newList: List = {
-                    name: listName,
-                    groceryList: [],
-                    editors: {
-                        [user.uid]: {
-                            name: user.displayName ? user.displayName : "_",
+            try {
+                const data = snap.val();
+                let listName: string = `List-${Date.now()}`;
+                if (!data) {
+                    // Initialize new list if it doesn't exist
+                    const newList: List = {
+                        name: listName,
+                        groceryList: [],
+                        editors: {
+                            [user.uid]: {
+                                name: user.displayName ? user.displayName : "_",
+                            },
                         },
-                    },
-                    createdBy: user.uid,
-                    people: [createNewPerson(user?.displayName || "_")],
-                    id: listId,
-                };
-                set(listRef, newList);
-                setGroceryList([]);
-                setPeople([
-                    {
-                        name: user.displayName || "",
-                        total: 0,
-                    },
-                ]);
-            } else {
-                setGroceryList(
-                    Array.isArray(data.groceryList) ? data.groceryList : [],
-                );
-                listName = data.name;
-                const editorsObj = data.editors || {};
-                const editorUids = Object.keys(editorsObj);
+                        createdBy: user.uid,
+                        people: [createNewPerson(user?.displayName || "_")],
+                        id: listId,
+                    };
+                    await set(listRef, newList);
+                    setGroceryList([]);
+                    setPeople([
+                        {
+                            name: user.displayName || "",
+                            total: 0,
+                        },
+                    ]);
+                } else {
+                    setGroceryList(
+                        Array.isArray(data.groceryList) ? data.groceryList : [],
+                    );
+                    listName = data.name;
+                    const editorsObj = data.editors || {};
+                    const editorUids = Object.keys(editorsObj);
 
-                let peoplePromises = editorUids.map(async (uid, idx) => {
-                    let userName = "_";
+                    let peoplePromises = editorUids.map(async (uid) => {
+                        let userName = "_";
 
-                    try {
-                        // Use cached profile if available
-                        if (profileCache.current[uid]) {
-                            const cached = profileCache.current[uid];
-                            if (cached.name) {
-                                const nameArr = cached.name.split(" ");
-                                userName = `${nameArr[0]}${nameArr[1] ? " " + nameArr[1][0] + "." : ""}`;
-                            }
-                        } else {
-                            const profileData = await getUserProfile(uid);
-                            if (profileData) {
-                                profileCache.current[uid] = profileData; // cache it
-                                if (profileData.name) {
-                                    const nameArr = profileData.name.split(" ");
+                        try {
+                            // Use cached profile if available
+                            if (profileCache.current[uid]) {
+                                const cached = profileCache.current[uid];
+                                if (cached.name) {
+                                    const nameArr = cached.name.split(" ");
                                     userName = `${nameArr[0]}${nameArr[1] ? " " + nameArr[1][0] + "." : ""}`;
                                 }
+                            } else {
+                                const profileData = await getUserProfile(uid);
+                                if (profileData) {
+                                    profileCache.current[uid] = profileData; // cache it
+                                    if (profileData.name) {
+                                        const nameArr = profileData.name.split(" ");
+                                        userName = `${nameArr[0]}${nameArr[1] ? " " + nameArr[1][0] + "." : ""}`;
+                                    }
+                                }
                             }
+                        } catch (err) {
+                            console.error("Profile fetch failed for uid", uid, err);
                         }
-                    } catch (err) {
-                        console.error("Profile fetch failed for uid", uid, err);
-                    }
 
-                    return {
-                        name: userName,
-                        total: 0,
-                    };
-                });
+                        return {
+                            name: userName,
+                            total: 0,
+                        };
+                    });
 
-                let newPeople = await Promise.all(peoplePromises);
+                    let newPeople = await Promise.all(peoplePromises);
 
-                newPeople = getTotals(newPeople, data.groceryList);
-                setPeople(newPeople);
+                    newPeople = getTotals(newPeople, data.groceryList);
+                    setPeople(newPeople);
+                }
+                if (!isEditingTitle) setTitle(listName);
+
+                hasLoaded.current = true; // mark loaded AFTER onValue fires
+            } catch (error) {
+                console.error("Failed to load grocery list:", error);
+            } finally {
+                if (isActive) setIsLoadingList(false);
             }
-            if (!isEditingTitle) setTitle(listName);
-
-            hasLoaded.current = true; // mark loaded AFTER onValue fires
         });
 
-        return () => unsubscribe();
+        return () => {
+            isActive = false;
+            unsubscribe();
+        };
     }, [user, listId, isEditingTitle]);
 
     async function getUserProfile(uid: string) {
@@ -382,6 +403,18 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                 groceryList={groceryList}
                 setGroceryList={setGroceryList}
             ></UploadReciept>
+            {isLoadingList && (
+                <div className="loading-overlay" role="status" aria-live="polite">
+                    <div className="loading-card">
+                        <span className="loading-spinner" aria-hidden="true" />
+                        <h2>Opening your list</h2>
+                        <p>
+                            Fetching your items and people so everything is
+                            ready to edit.
+                        </p>
+                    </div>
+                </div>
+            )}
             <span
                 className="dashboard-button"
                 onClick={() => {
