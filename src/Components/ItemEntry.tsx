@@ -84,10 +84,7 @@ export function ItemEntry({
             <input
                 value={itemName}
                 style={{
-                    height: "28px",
-                    width: "100px",
-                    fontSize: "calc(1px + 2vmin)",
-                    left: "10px",
+                    width: `${Math.max(itemName.length + 2, 12)}ch`,
                 }}
                 onChange={handleChange}
                 onBlur={handleBlur}

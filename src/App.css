@@ -1,415 +1,761 @@
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+:root {
+    --ink: #24312d;
+    --muted: #6d7973;
+    --line: #dce4df;
+    --surface: #ffffff;
+    --canvas: #f5f7f4;
+    --accent: #2f6f57;
+    --accent-dark: #245642;
+    --accent-soft: #e8f1eb;
+    --danger: #b6524e;
+    --shadow: 0 18px 45px rgba(37, 57, 47, 0.08);
 }
 
-/* ===== Global App Styling ===== */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    background: var(--canvas);
+    color: var(--ink);
+}
+
+button,
+input {
+    font: inherit;
+}
+
+button {
+    border: 0;
+    cursor: pointer;
+}
+
+button:focus-visible,
+input:focus-visible {
+    outline: 3px solid rgba(47, 111, 87, 0.28);
+    outline-offset: 2px;
+}
+
 .App {
-    background: linear-gradient(135deg, #f5f7fa, #e4ecf7);
     min-height: 100vh;
-    padding-bottom: 40px;
-    font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 0 24px 56px;
 }
 
-/* ===== Input Header ===== */
-.App-input-box {
-    background: #1e3a8a;
-    min-height: 12vh;
+.login-page {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: var(--canvas);
+}
+
+.login-card {
+    width: min(100%, 470px);
+    padding: 52px 48px 44px;
+    text-align: center;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    box-shadow: var(--shadow);
+    animation: rise-in 0.55s ease both;
+}
+
+.brand-mark,
+.empty-state-icon {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    margin: 0 auto 24px;
+    border-radius: 16px;
+    background: var(--accent);
+    color: white;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+}
+
+.eyebrow {
+    margin: 0 0 10px;
+    color: var(--accent);
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.login-card h1,
+.dashboard-header h1 {
+    margin: 0;
+    color: var(--ink);
+    font-size: clamp(2rem, 5vw, 3.1rem);
+    letter-spacing: -0.06em;
+    line-height: 1.05;
+}
+
+.login-description,
+.dashboard-subtitle {
+    max-width: 34rem;
+    margin: 18px auto 30px;
+    color: var(--muted);
+    font-size: 1rem;
+    line-height: 1.65;
+}
+
+.google-login-button {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: calc(6px + 2vmin);
-    color: #ffffff;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-}
-
-.App-input-box input {
-    border-radius: 6px;
-    border: none;
-    padding: 6px 10px;
-    margin-right: 8px;
-}
-
-.App-input-box button {
-    background-color: #22c55e;
-    border: none;
-    border-radius: 6px;
-    padding: 6px 14px;
-    font-size: 0.9em;
-    cursor: pointer;
-    color: white;
-}
-
-.App-input-box button:hover {
-    background-color: #16a34a;
-}
-
-/* ===== Titles ===== */
-.grocery-list-title {
-    margin: 24px 0 12px 12%;
-    color: #1e293b;
-}
-
-/* ===== People Slider ===== */
-.set-people {
-    margin-left: 5%;
-    margin-top: 2%;
-    background: white;
-    padding: 16px;
-    border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    display: inline-block;
-}
-
-/* ===== Table Container ===== */
-.App-table {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    width: fit-content;
-    border-radius: 12px;
-    border: 1px solid #cbd5e1;
-    margin-left: 12%;
-    margin-right: 10%;
-    background-color: #ffffff;
-    overflow: hidden;
-}
-
-/* ===== Headers ===== */
-.table-header {
-    display: grid;
-    grid-template-columns: 1fr 1fr repeat(var(--num-people), 1fr);
-    gap: 10px;
-    font-weight: bold;
-    background: #1e40af;
-    color: white;
-    text-align: center;
-    padding: 10px 8px;
-}
-
-.header-item,
-.header-price,
-.header-choice {
-    font-weight: bold;
-}
-
-/* ===== Rows ===== */
-.table-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr repeat(var(--num-people), 1fr);
-    gap: 10px;
-    align-items: center;
-    padding: 8px;
-    background-color: #f8fafc;
-}
-
-.table-row:nth-child(even) {
-    background-color: #eef2ff;
-}
-
-/* ===== Cells ===== */
-.table-item {
-    text-align: left;
-    font-size: 18px;
-}
-
-.table-price,
-.table-choice {
-    text-align: center;
-    font-size: 18px;
-}
-
-/* ===== Footer ===== */
-.table-footer {
-    display: grid;
-    grid-template-columns: 1fr 1fr repeat(var(--num-people), 1fr);
-    gap: 10px;
-    align-items: center;
-    background: #1e3a8a;
-    color: white;
-    font-weight: bold;
-    padding: 10px 8px;
-    text-align: center;
-}
-
-.footer-label {
-    text-align: right;
-    padding-right: 10px;
-}
-
-.footer-person {
-    text-align: center;
-}
-
-/* ===== Buttons ===== */
-button {
-    border-radius: 6px;
-}
-
-button:hover {
-    opacity: 0.9;
-}
-
-/* ===== Inputs ===== */
-input[type="text"],
-input[type="number"] {
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    padding: 4px 6px;
-}
-
-input[type="checkbox"] {
-    accent-color: #2563eb;
-}
-
-/* ===== Upload Receipt Button Top-Right ===== */
-.upload-receipt-button {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background-color: #f59e0b;
-    color: white;
-    border: none;
-    padding: 10px 16px;
-    border-radius: 8px;
-    font-size: 1em;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    z-index: 1000;
-}
-
-.upload-receipt-button:hover {
-    background-color: #d97706;
-}
-
-/* ===== Share List Button (Top‑Right) ===== */
-.share-list-button {
-    position: fixed;
-    top: 20px;
-    right: 170px; /* places it left of Upload Receipt */
-    background-color: #22c55e;
-    color: white;
-    border: none;
-    padding: 10px 16px;
-    border-radius: 8px;
-    font-size: 1em;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    z-index: 1000;
-}
-
-.share-list-button:hover {
-    background-color: #16a34a;
-}
-
-/* ===== Fixed Share Form ===== */
-.share-form-fixed {
-    position: fixed;
-    top: 70px;
-    right: 160px;
-    background: white;
-    padding: 10px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    z-index: 1000;
-}
-
-/* ===== Dashboard Buttons ===== */
-
-.dashboard-new-list-btn {
-    background: linear-gradient(135deg, #4f46e5, #6366f1); /* purple gradient */
-    color: white;
-    font-weight: bold;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-size: 1.1em;
-    cursor: pointer;
-    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
-    transition:
-        transform 0.15s ease,
-        background 0.25s ease;
-}
-
-.dashboard-new-list-btn:hover {
-    background: linear-gradient(135deg, #4338ca, #4f46e5);
-    transform: translateY(-2px);
-}
-
-/* ===== Dashboard List Cards ===== */
-.list-card {
-    background: white;
-    border-radius: 12px;
-    border: 1px solid #d1d5db;
-    padding: 16px 20px;
-    margin: 8px 0;
-    box-shadow: 0px 3px 8px rgba(0, 0, 0, 0.07);
-    transition:
-        box-shadow 0.2s ease,
-        transform 0.15s ease;
-    max-width: 480px;
+    gap: 12px;
     width: 100%;
-    cursor: pointer;
+    min-height: 52px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: white;
+    color: var(--ink);
+    font-weight: 700;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
-.list-card:hover {
-    box-shadow: 0px 6px 14px rgba(0, 0, 0, 0.12);
+.google-login-button:hover {
+    border-color: #aac5b5;
+    box-shadow: 0 8px 20px rgba(37, 57, 47, 0.1);
     transform: translateY(-2px);
+}
+
+.google-login-button img {
+    width: 19px;
+    height: 19px;
+}
+
+.login-note {
+    margin: 22px 0 0;
+    color: var(--muted);
+    font-size: 0.82rem;
 }
 
 .dashboard-container {
-    padding: 30px;
+    width: min(100%, 820px);
+    margin: 0 auto;
+    padding: 64px 0 0;
+}
+
+.dashboard-header {
     display: flex;
-    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    padding-bottom: 34px;
+    border-bottom: 1px solid var(--line);
+}
+
+.dashboard-header .eyebrow {
+    margin-bottom: 12px;
+}
+
+.dashboard-subtitle {
+    margin: 14px 0 0;
+}
+
+.dashboard-signout-btn,
+.dashboard-clear-lists-btn {
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.dashboard-signout-btn:hover {
+    color: var(--danger);
+}
+
+.dashboard-actions {
+    display: flex;
     align-items: center;
+    gap: 12px;
+    margin: 28px 0;
+}
+
+.dashboard-new-list-btn,
+.dashboard-clear-lists-btn {
+    min-height: 44px;
+    padding: 0 17px;
+    border-radius: 10px;
+    font-weight: 750;
+}
+
+.dashboard-new-list-btn {
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 8px 18px rgba(47, 111, 87, 0.18);
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.dashboard-new-list-btn span {
+    margin-right: 7px;
+    font-size: 1.2rem;
+    line-height: 0;
+}
+
+.dashboard-new-list-btn:hover {
+    background: var(--accent-dark);
+    transform: translateY(-2px);
+}
+
+.dashboard-clear-lists-btn {
+    color: var(--danger);
+}
+
+.dashboard-clear-lists-btn:hover {
+    background: #f9e9e7;
 }
 
 .list-wrapper {
     width: 100%;
-    max-width: 600px;
 }
 
-/* ===== Delete Button on List Cards ===== */
-.list-delete-btn {
-    background-color: #ef4444; /* red */
-    color: white;
-    border: none;
-    padding: 6px 12px;
-    font-size: 0.9em;
-    border-radius: 6px;
+.list-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    min-height: 88px;
+    margin: 12px 0;
+    padding: 20px 22px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--surface);
+    box-shadow: 0 5px 16px rgba(37, 57, 47, 0.04);
     cursor: pointer;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-    transition:
-        background-color 0.2s ease,
-        transform 0.1s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.list-card:hover {
+    border-color: #a9c5b4;
+    box-shadow: 0 12px 26px rgba(37, 57, 47, 0.09);
+    transform: translateY(-2px);
+}
+
+.list-card h3 {
+    margin: 0;
+    font-size: 1.05rem;
+}
+
+.list-card hr {
+    display: none;
+}
+
+.list-delete-btn {
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-weight: 700;
 }
 
 .list-delete-btn:hover {
-    background-color: #dc2626; /* darker red */
-    transform: translateY(-1px);
+    background: #f9e9e7;
+    color: var(--danger);
 }
 
-.list-delete-btn:active {
-    background-color: #b91c1c;
+.empty-state {
+    padding: 54px 24px;
+    border: 1px dashed #bfd0c5;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.55);
+    text-align: center;
 }
 
-.dashboard-buttons-container > div {
-    background: #3b82f6;
-    color: white;
-    padding: 10px 16px;
-    border-radius: 6px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background 0.2s ease;
+.empty-state-icon {
+    width: 42px;
+    height: 42px;
+    margin-bottom: 18px;
+    border-radius: 12px;
+    font-size: 1.5rem;
 }
 
-.dashboard-buttons-container > div:hover {
-    background: #2563eb;
+.empty-state h2 {
+    margin: 0;
+    font-size: 1.15rem;
 }
 
-.dashboard-clear-lists-btn {
-    background: #ef4444; /* red for destructive action */
+.empty-state p {
+    margin: 8px 0 0;
+    color: var(--muted);
 }
 
-.dashboard-clear-lists-btn:hover {
-    background: #dc2626;
-}
-
-/* ===== Sign Out Button (Top‑Right) ===== */
-.dashboard-signout-container {
+.App-input-box {
     display: flex;
-    justify-content: flex-end;
-    padding: 12px 24px;
+    justify-content: center;
+    padding: 28px 0;
+    border-bottom: 1px solid var(--line);
 }
 
-.dashboard-signout-btn {
-    background-color: #ef4444;
-    color: white;
-    border: none;
-    padding: 8px 14px;
-    border-radius: 8px;
-    font-weight: bold;
-    cursor: pointer;
-    transition:
-        background-color 0.2s ease,
-        transform 0.1s ease;
-    font-size: 0.95em;
-}
-
-.dashboard-signout-btn:hover {
-    background-color: #dc2626;
-    transform: translateY(-1px);
-}
-
-.dashboard-signout-btn:active {
-    background-color: #b91c1c;
-}
-
-/* ===== Share Email Form ===== */
-
-.share-form {
+.App-input-box span {
     display: flex;
-    gap: 8px;
-    margin: 10px 0;
+    width: min(100%, 620px);
+    gap: 10px;
 }
 
-.share-form input {
-    padding: 6px;
+.App-input-box input,
+.share-form input,
+.title-input,
+.table-item input,
+.table-price input {
+    min-height: 42px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--surface);
+    color: var(--ink);
+    padding: 8px 12px;
 }
 
-.title-input {
-    all: unset;              /* removes ALL default input styling */
-    font: inherit;           /* match h1 exactly */
-    color: inherit;
-    cursor: text;
+.App-input-box input {
+    flex: 1;
 }
 
-.title-text {
-    cursor: pointer;
+.App-input-box button,
+.share-form button {
+    min-height: 42px;
+    padding: 0 18px;
+    border-radius: 9px;
+    background: var(--accent);
+    color: white;
+    font-weight: 700;
+}
+
+.list-title {
+    width: min(100%, 1100px);
+    margin: 42px auto 22px;
+    padding-left: 0 !important;
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    letter-spacing: -0.04em;
 }
 
 .title-text:hover {
-    text-decoration: underline;
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.App-table {
+    width: min(100%, 1100px);
+    margin: 0 auto;
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+}
+
+.table-header,
+.table-row,
+.table-footer {
+    display: grid;
+    grid-template-columns: minmax(320px, max-content) minmax(100px, 0.8fr) repeat(var(--num-people), minmax(70px, 1fr));
+    gap: 12px;
+    min-width: 520px;
+    align-items: center;
+    padding: 15px 18px;
+}
+
+.table-header > :first-child,
+.table-row > :first-child,
+.table-footer > :first-child {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+}
+
+.table-header {
+    background: var(--accent-soft);
+    color: var(--accent-dark);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.table-header > :first-child {
+    background: var(--accent-soft);
+}
+
+.table-row > :first-child {
+    background: var(--surface);
+}
+
+.table-footer > :first-child {
+    background: #f1f5f2;
+}
+
+.table-row {
+    border-top: 1px solid #edf1ee;
+}
+
+.table-row:hover {
+    background: #fbfcfb;
+}
+
+.table-footer {
+    background: #f1f5f2;
+    color: var(--accent-dark);
+    font-weight: 800;
+}
+
+.header-person,
+.table-price,
+.table-choice,
+.footer-person,
+.footer-total-price {
+    text-align: center;
+}
+
+.table-item {
+    text-align: left;
+}
+
+.table-item button {
+    margin-right: 8px;
+    padding: 7px 8px;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--danger);
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.table-item button:hover {
+    background: #f9e9e7;
+}
+
+.table-item input {
+    height: 38px !important;
+    font-size: 0.95rem !important;
+}
+
+.table-price input {
+    width: 90px !important;
+    height: 38px !important;
+    font-size: 0.95rem !important;
+}
+
+.table-choice input {
+    width: 20px !important;
+    height: 20px !important;
+    accent-color: var(--accent);
+}
+
+.share-list-button,
+.upload-receipt-button,
+.dashboard-button {
+    position: fixed;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: 9px;
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    color: white;
+    text-align: center;
+    font-size: 0.85rem;
+    font-weight: 750;
+    box-shadow: 0 5px 16px rgba(47, 111, 87, 0.2);
+    transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.share-list-button:hover,
+.upload-receipt-button:hover,
+.dashboard-button:hover {
+    border-color: var(--accent-dark);
+    background: var(--accent-dark);
+    transform: translateY(-2px);
+}
+
+.share-list-button {
+    top: 20px;
+    right: 152px;
+}
+
+.upload-receipt-button {
+    top: 20px;
+    right: 24px;
 }
 
 .dashboard-button {
-    position: fixed;
     top: 20px;
-    left: 20px;
+    left: 24px;
+}
 
-    background: linear-gradient(135deg, #0ea5e9, #2563eb); /* Blue gradient */
-    color: white;
-
-    border: none;
-    padding: 12px 20px;
-    border-radius: 999px; /* Pill shape */
-
-    font-size: 0.95em;
-    font-weight: bold;
-    letter-spacing: 0.02em;
-
-    cursor: pointer;
-    box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
-    z-index: 1000;
-
+.share-form-fixed {
+    position: fixed;
+    top: 70px;
+    right: 152px;
+    z-index: 20;
     display: flex;
-    align-items: center;
     gap: 8px;
-
-    transition:
-        transform 0.15s ease,
-        box-shadow 0.2s ease,
-        background 0.25s ease;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
 }
 
-.dashboard-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 24px rgba(37, 99, 235, 0.45);
-    background: linear-gradient(135deg, #0284c7, #1d4ed8);
+.share-form input {
+    width: 220px;
 }
 
-.dashboard-button:active {
-    transform: translateY(0);
-    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+.share-form button:last-child {
+    background: transparent;
+    color: var(--muted);
+}
+
+@keyframes rise-in {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 700px) {
+    .App {
+        padding: 0 14px 42px;
+    }
+
+    .login-card {
+        padding: 40px 24px 34px;
+    }
+
+    .dashboard-container {
+        padding-top: 34px;
+    }
+
+    .dashboard-header {
+        flex-direction: column;
+    }
+
+    .dashboard-signout-btn {
+        padding: 0;
+    }
+
+    .dashboard-actions {
+        margin: 22px 0;
+    }
+
+    .App-input-box {
+        padding: 18px 0;
+    }
+
+    .App-input-box span {
+        gap: 8px;
+    }
+
+    .App-input-box button {
+        padding: 0 14px;
+    }
+
+    .list-title {
+        margin-top: 28px;
+        margin-bottom: 16px;
+    }
+
+    .App-table {
+        overflow: visible;
+        border: 0;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    .table-header {
+        display: none;
+    }
+
+    .table-row,
+    .table-footer {
+        min-width: 0;
+        grid-template-columns: 1fr 1fr;
+        gap: 0;
+        margin-bottom: 12px;
+        padding: 0;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: var(--surface);
+        box-shadow: 0 5px 16px rgba(37, 57, 47, 0.05);
+    }
+
+    .table-row:hover {
+        background: var(--surface);
+    }
+
+    .table-row > :first-child,
+    .table-footer > :first-child {
+        position: static;
+    }
+
+    .table-item {
+        grid-column: 1 / -1;
+        padding: 14px 12px;
+        border-bottom: 1px solid var(--line);
+        background: var(--accent-soft) !important;
+    }
+
+    .table-item > span {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .table-item button {
+        flex: 0 0 auto;
+        margin-right: 0;
+        padding: 8px 6px;
+    }
+
+    .table-item input {
+        min-width: 0;
+        max-width: calc(100vw - 100px);
+    }
+
+    .table-price {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 0.85rem;
+        font-weight: 700;
+        text-align: left;
+    }
+
+    .table-price::before {
+        content: "Price";
+    }
+
+    .table-price input {
+        width: 72px !important;
+    }
+
+    .table-choice {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        min-height: 48px;
+        padding: 8px 12px;
+        border-bottom: 1px solid #edf1ee;
+        text-align: right;
+    }
+
+    .table-choice::before,
+    .footer-person::before {
+        overflow: hidden;
+        color: var(--ink);
+        content: attr(data-person);
+        font-size: 0.86rem;
+        font-weight: 650;
+        text-align: left;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .table-footer {
+        overflow: visible;
+        margin-top: 20px;
+        padding: 12px;
+        border: 1px solid #c8d9cd;
+        background: #f1f5f2;
+        box-shadow: none;
+    }
+
+    .footer-label,
+    .footer-total-price {
+        min-height: 32px;
+        display: flex;
+        align-items: center;
+        padding: 0;
+        text-align: left;
+    }
+
+    .footer-total-price {
+        justify-content: flex-end;
+    }
+
+    .footer-person {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 36px;
+        padding: 7px 0 0;
+        text-align: right;
+    }
+
+    .share-list-button,
+    .upload-receipt-button,
+    .dashboard-button {
+        top: auto;
+        bottom: 14px;
+        min-height: 46px;
+        padding: 0 12px;
+        border-radius: 12px;
+        box-shadow: 0 8px 20px rgba(37, 57, 47, 0.15);
+    }
+
+    .share-list-button {
+        right: 50%;
+        transform: translateX(50%);
+    }
+
+    .share-list-button:hover {
+        transform: translate(50%, -2px);
+    }
+
+    .upload-receipt-button {
+        right: 14px;
+    }
+
+    .dashboard-button {
+        left: 14px;
+    }
+
+    .share-form-fixed {
+        top: auto;
+        bottom: 72px;
+        right: 14px;
+        left: 14px;
+        flex-wrap: wrap;
+    }
+
+    .share-form input {
+        min-width: 0;
+        flex: 1 1 100%;
+        width: 100%;
+    }
+
+    .share-form button {
+        flex: 1;
+    }
+
+    .App {
+        padding-bottom: 84px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+    }
 }

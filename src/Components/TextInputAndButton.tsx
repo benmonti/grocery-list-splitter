@@ -46,6 +46,9 @@ export function TextInputAndButton({
             <input
                 type="text"
                 value={newItem}
+                style={{
+                    width: `${Math.min(Math.max(newItem.length + 4, 16), 32)}ch`,
+                }}
                 onChange={(e) => {
                     setNewItem(e.target.value);
                 }}

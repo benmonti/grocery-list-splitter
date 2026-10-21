@@ -134,26 +134,27 @@ export function Dashboard({ user }: { user: fbauth.User | null }) {
 
     return (
         <div className="dashboard-container">
-            <div className="dashboard-signout-container">
+            <header className="dashboard-header">
+                <div>
+                    <p className="eyebrow">Your workspace</p>
+                    <h1>Grocery lists</h1>
+                    <p className="dashboard-subtitle">
+                        Plan a shop, invite your people, and settle up with less
+                        effort.
+                    </p>
+                </div>
                 <button
                     className="dashboard-signout-btn"
                     onClick={handleSignOut}
                 >
                     Sign Out
                 </button>
-            </div>
-            <div
-                className="dashboard-buttons-container"
-                style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    gap: "12px",
-                }}
-            >
-                <div className="dashboard-new-list-btn" onClick={addList}>
-                    New List
-                </div>
-                <div
+            </header>
+            <div className="dashboard-actions">
+                <button className="dashboard-new-list-btn" onClick={addList}>
+                    <span aria-hidden="true">+</span> New list
+                </button>
+                <button
                     className="dashboard-clear-lists-btn"
                     onClick={() => {
                         const confirmClear = window.confirm(
@@ -163,10 +164,19 @@ export function Dashboard({ user }: { user: fbauth.User | null }) {
                         clearLists();
                     }}
                 >
-                    Clear Lists
-                </div>
+                    Clear lists
+                </button>
             </div>
             <div className="list-wrapper">
+                {lists.length === 0 && (
+                    <div className="empty-state">
+                        <span className="empty-state-icon" aria-hidden="true">
+                            +
+                        </span>
+                        <h2>Your lists will show up here</h2>
+                        <p>Create your first list to get started.</p>
+                    </div>
+                )}
                 <DragDropContext
                     onDragEnd={(result) => {
                         if (!result.destination) return;

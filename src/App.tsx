@@ -68,34 +68,27 @@ function App(): React.JSX.Element {
 
     if (!user) {
         return (
-            <div id="login" style={{ justifySelf: "center", marginTop: "20%" }}>
-                <h1 style={{ justifySelf: "center" }}>Welcome back!</h1>
-                <button
-                    onClick={handleGoogleLogin}
-                    style={{
-                        width: "200px",
-                        height: "50px",
-                        marginLeft: "6%",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "8px",
-                        fontSize: "17px",
-                        borderRadius: "15px",
-                    }}
-                >
-                    <img
-                        src={`${import.meta.env.BASE_URL}google-logo.png`}
-                        alt="Google"
-                        style={{
-                            width: "10%",
-                            height: "40%",
-                            marginRight: "10px",
-                        }}
-                    ></img>
-                    Login With Google
-                </button>
-            </div>
+            <main className="login-page">
+                <div className="login-card" id="login">
+                    <div className="brand-mark" aria-hidden="true">
+                        GS
+                    </div>
+                    <p className="eyebrow">Grocery List Splitter</p>
+                    <h1>Make every shared shop simpler.</h1>
+                    <p className="login-description">
+                        Keep items, prices, and everyone&apos;s share in one
+                        calm, easy-to-use place.
+                    </p>
+                    <button className="google-login-button" onClick={handleGoogleLogin}>
+                        <img
+                            src={`${import.meta.env.BASE_URL}google-logo.png`}
+                            alt=""
+                        />
+                        Continue with Google
+                    </button>
+                    <p className="login-note">Simple splitting for shared lists.</p>
+                </div>
+            </main>
         );
     } else {
         return (

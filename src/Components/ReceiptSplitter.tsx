@@ -308,7 +308,13 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                             />
                         </div>
                         {people.map((person: Person, i: number) => (
-                            <div className="table-choice" key={i}>
+                            <div
+                                className="table-choice"
+                                key={i}
+                                data-person={
+                                    person.name || `Person ${i + 1}`
+                                }
+                            >
                                 <CreateChoiceBoxes
                                     groceryList={groceryList}
                                     setGroceryList={setGroceryList}
@@ -331,7 +337,11 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                             .toFixed(2)}
                     </div>
                     {people.map((person: Person, i: number) => (
-                        <div className="footer-person" key={i}>
+                        <div
+                            className="footer-person"
+                            key={i}
+                            data-person={person.name || `Person ${i + 1}`}
+                        >
                             {people[i].total.toFixed(2)}
                         </div>
                     ))}
