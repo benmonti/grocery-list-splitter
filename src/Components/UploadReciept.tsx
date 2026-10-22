@@ -53,26 +53,11 @@ export function UploadReciept({
             throw new Error("Please choose an image file");
         }
 
-        let imageFile: Blob = file;
         if (isHeicFile(file)) {
-            setProcessingStage("Converting your receipt photo");
-            try {
-                const { default: heic2any } = await import("heic2any");
-                const converted = await heic2any({
-                    blob: file,
-                    toType: "image/jpeg",
-                    quality: 0.95,
-                });
-                imageFile = Array.isArray(converted) ? converted[0] : converted;
-            } catch (error) {
-                console.warn(
-                    "HEIC conversion failed; uploading the original image:",
-                    error,
-                );
-            }
+            setProcessingStage("Preparing your HEIC receipt");
         }
 
-        return compressReceiptImage(imageFile, file.name);
+        return compressReceiptImage(file, file.name);
     }
 
     function compressReceiptImage(
