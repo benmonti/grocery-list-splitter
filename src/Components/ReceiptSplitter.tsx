@@ -8,7 +8,7 @@ import { TextInputAndButton } from "./TextInputAndButton";
 import { UploadReciept } from "./UploadReciept";
 import * as fbauth from "firebase/auth";
 import { app, db } from "../App";
-import { onValue, ref, set } from "firebase/database";
+import { onValue, ref, set, update } from "firebase/database";
 import { useNavigate, useParams } from "react-router-dom";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { List } from "../interfaces/groceryList";
@@ -112,6 +112,7 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
     const { listId } = useParams();
     const hasLoaded = useRef(false);
     const loadingListId = useRef<string | undefined>(undefined);
+    const latestSnapshot = useRef(0);
     const navigate = useNavigate();
     const profileCache = useRef<
         Record<string, { name: string; email: string }>
@@ -126,6 +127,7 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
         if (loadingListId.current !== listId) {
             loadingListId.current = listId;
             hasLoaded.current = false;
+            latestSnapshot.current = 0;
             setIsLoadingList(true);
         }
 
@@ -134,6 +136,7 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
 
         // Live updates
         const unsubscribe = onValue(listRef, async (snap) => {
+            const snapshotId = ++latestSnapshot.current;
             try {
                 const data = snap.val();
                 let listName: string = `List-${Date.now()}`;
@@ -203,6 +206,9 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                     });
 
                     const profiles = await Promise.all(peoplePromises);
+                    if (!isActive || snapshotId !== latestSnapshot.current) {
+                        return;
+                    }
                     const displayNames = formatDistinctNames(profiles);
                     setListMembers(
                         profiles.map((profile, index) => ({
@@ -259,10 +265,13 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
         if (!user || !listId) return;
         if (!hasLoaded.current) return;
 
-        const groceryRef = ref(db, `lists/${listId}/groceryList`);
-        const peopleRef = ref(db, `lists/${listId}/people`);
-        set(groceryRef, groceryList).catch(console.error);
-        set(peopleRef, people);
+        const listRef = ref(db, `lists/${listId}`);
+        update(listRef, {
+            groceryList,
+            people,
+        }).catch((error) => {
+            console.error("Failed to save grocery list changes:", error);
+        });
     }, [groceryList, user, listId, people]);
 
     async function handleShare() {
