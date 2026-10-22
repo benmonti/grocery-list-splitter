@@ -44,8 +44,12 @@ export const registerEmail = onCall<
 
 export const shareList = onCall<
   {listId: string; invitedUids?: string[]; invitedUid?: string},
+  {listId: string; invitedUids?: string[]; invitedUid?: string},
   Promise<{success: boolean}>
 >(async (request) => {
+  const {listId} = request.data;
+  const invitedUids = request.data.invitedUids ||
+    (request.data.invitedUid ? [request.data.invitedUid] : []);
   const {listId} = request.data;
   const invitedUids = request.data.invitedUids ||
     (request.data.invitedUid ? [request.data.invitedUid] : []);
@@ -54,10 +58,24 @@ export const shareList = onCall<
     throw new HttpsError("unauthenticated", "Must be logged in to share");
   }
   if (!listId || invitedUids.length === 0) {
+  if (!listId || invitedUids.length === 0) {
     throw new HttpsError("invalid-argument", "Missing parameters");
   }
 
   try {
+    const database = admin.database();
+    const listSnapshot = await database.ref(`lists/${listId}`).once("value");
+    const list = listSnapshot.val();
+    if (!list || !list.editors?.[uid]) {
+      throw new HttpsError("permission-denied", "You cannot share this list");
+    }
+
+    const updates: Record<string, string | boolean> = {};
+    for (const invitedUid of [...new Set(invitedUids)]) {
+      const profileSnapshot = await database
+        .ref(`users/${invitedUid}/profile`)
+        .once("value");
+      const userName = profileSnapshot.val()?.name || "";
     const database = admin.database();
     const listSnapshot = await database.ref(`lists/${listId}`).once("value");
     const list = listSnapshot.val();
@@ -77,9 +95,15 @@ export const shareList = onCall<
     }
 
     await database.ref().update(updates);
+      updates[`lists/${listId}/editors/${invitedUid}/name`] = userName;
+      updates[`users/${invitedUid}/lists/${listId}`] = true;
+    }
+
+    await database.ref().update(updates);
 
     return {success: true};
   } catch (err) {
+    if (err instanceof HttpsError) throw err;
     if (err instanceof HttpsError) throw err;
     throw new HttpsError("internal", "Failed to share list");
   }
@@ -117,7 +141,6 @@ export const searchUsers = onCall<
   return {users: matches};
 });
 
-<<<<<<< Updated upstream
 export const removeListMember = onCall<
   {listId: string; memberUid: string},
   Promise<{success: boolean}>
@@ -173,8 +196,6 @@ export const removeListMember = onCall<
   return {success: true};
 });
 
-=======
->>>>>>> Stashed changes
 export const deleteList = onCall<
   {listId: string},
   Promise<{success: boolean}>

@@ -73,14 +73,16 @@ function formatDistinctNames(profiles: PersonProfile[]): string[] {
 
     return parsedProfiles.map((profile, index) => {
         const prefixLength = prefixLengths[index];
-        const name = profile.lastName ?
+        const name =
+            profile.lastName ?
                 `${profile.firstName} ${profile.lastName.slice(0, prefixLength)}`
             :   profile.firstName;
-        const duplicateName = parsedProfiles.filter(
-            (other) =>
-                other.firstName === profile.firstName &&
-                other.lastName === profile.lastName,
-        ).length > 1;
+        const duplicateName =
+            parsedProfiles.filter(
+                (other) =>
+                    other.firstName === profile.firstName &&
+                    other.lastName === profile.lastName,
+            ).length > 1;
 
         if (duplicateName && profile.email) {
             return `${name} (${profile.email.split("@")[0]})`;
@@ -98,10 +100,10 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
     const [showShareForm, setShowShareForm] = useState<boolean>(false);
     const [shareSearch, setShareSearch] = useState("");
     const [shareSuggestions, setShareSuggestions] = useState<
-        {uid: string; name: string; email: string}[]
+        { uid: string; name: string; email: string }[]
     >([]);
     const [selectedPeople, setSelectedPeople] = useState<
-        {uid: string; name: string; email: string}[]
+        { uid: string; name: string; email: string }[]
     >([]);
     const [listMembers, setListMembers] = useState<ListMember[]>([]);
     const [isSearchingPeople, setIsSearchingPeople] = useState(false);
@@ -191,10 +193,14 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                                 }
                             }
                         } catch (err) {
-                            console.error("Profile fetch failed for uid", uid, err);
+                            console.error(
+                                "Profile fetch failed for uid",
+                                uid,
+                                err,
+                            );
                         }
 
-                        return {uid, ...profile};
+                        return { uid, ...profile };
                     });
 
                     const profiles = await Promise.all(peoplePromises);
@@ -249,7 +255,6 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
 
         return profile;
     }
-
     // Writing local edits
     useEffect(() => {
         if (!user || !listId) return;
@@ -264,8 +269,6 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
     async function handleShare() {
         if (selectedPeople.length === 0) {
             alert("Choose at least one person to share with");
-        if (selectedPeople.length === 0) {
-            alert("Choose at least one person to share with");
             return;
         }
 
@@ -273,16 +276,12 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
             setShareStatus("Sharing the list…");
             const functions = getFunctions(app);
             const shareListFn = httpsCallable(functions, "shareList");
+
             await shareListFn({
                 listId,
                 invitedUids: selectedPeople.map((person) => person.uid),
-                invitedUids: selectedPeople.map((person) => person.uid),
             });
 
-            alert("List shared successfully");
-            setShareSearch("");
-            setShareSuggestions([]);
-            setSelectedPeople([]);
             alert("List shared successfully");
             setShareSearch("");
             setShareSuggestions([]);
@@ -309,10 +308,7 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
         try {
             setShareStatus(`Removing ${member.name || "person"}…`);
             const functions = getFunctions(app);
-            const removeMemberFn = httpsCallable(
-                functions,
-                "removeListMember",
-            );
+            const removeMemberFn = httpsCallable(functions, "removeListMember");
             await removeMemberFn({
                 listId,
                 memberUid: member.uid,
@@ -343,10 +339,10 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
             try {
                 const functions = getFunctions(app);
                 const searchUsersFn = httpsCallable<
-                    {query: string},
-                    {users: {uid: string; name: string; email: string}[]}
+                    { query: string },
+                    { users: { uid: string; name: string; email: string }[] }
                 >(functions, "searchUsers");
-                const result = await searchUsersFn({query});
+                const result = await searchUsersFn({ query });
                 setShareSuggestions(
                     result.data.users.filter(
                         (person) =>
@@ -478,9 +474,7 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                             <div
                                 className="table-choice"
                                 key={i}
-                                data-person={
-                                    person.name || `Person ${i + 1}`
-                                }
+                                data-person={person.name || `Person ${i + 1}`}
                             >
                                 <CreateChoiceBoxes
                                     groceryList={groceryList}
@@ -532,7 +526,9 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                         </div>
                     )}
                     <div className="list-members">
-                        <p className="share-section-label">People with access</p>
+                        <p className="share-section-label">
+                            People with access
+                        </p>
                         {listMembers.map((member) => (
                             <div className="list-member" key={member.uid}>
                                 <span className="suggestion-avatar">
@@ -541,7 +537,9 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                                         .toUpperCase()}
                                 </span>
                                 <span className="list-member-details">
-                                    <strong>{member.name || "Unnamed user"}</strong>
+                                    <strong>
+                                        {member.name || "Unnamed user"}
+                                    </strong>
                                     <small>{member.email}</small>
                                 </span>
                                 {member.uid !== user?.uid && (
@@ -571,7 +569,8 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                                             setSelectedPeople((current) =>
                                                 current.filter(
                                                     (selected) =>
-                                                        selected.uid !== person.uid,
+                                                        selected.uid !==
+                                                        person.uid,
                                                 ),
                                             )
                                         }
@@ -653,7 +652,11 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                 setGroceryList={setGroceryList}
             ></UploadReciept>
             {isLoadingList && (
-                <div className="loading-overlay" role="status" aria-live="polite">
+                <div
+                    className="loading-overlay"
+                    role="status"
+                    aria-live="polite"
+                >
                     <div className="loading-card">
                         <span className="loading-spinner" aria-hidden="true" />
                         <h2>Opening your list</h2>
