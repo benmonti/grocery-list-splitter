@@ -19,6 +19,7 @@ function extractMimeType(dataUrl: string, fallback = "image/jpeg"): string {
 export async function getGeminiResponse(
     image: string,
     mimeType = "image/jpeg",
+    attempt = 1,
 ) {
     if (!image || typeof image !== "string" || !image.trim()) {
         return "No Image Provided";
@@ -35,19 +36,26 @@ export async function getGeminiResponse(
             config: {
                 responseMimeType: "application/json",
                 responseSchema: {
-                    type: "ARRAY",
-                    items: {
-                        type: "OBJECT",
-                        properties: {
-                            name: {type: "STRING"},
-                            price: {type: "NUMBER"},
-                            people: {
-                                type: "ARRAY",
-                                items: {type: "BOOLEAN"},
+                    type: "OBJECT",
+                    properties: {
+                        items: {
+                            type: "ARRAY",
+                            items: {
+                                type: "OBJECT",
+                                properties: {
+                                    name: {type: "STRING"},
+                                    price: {type: "NUMBER"},
+                                    people: {
+                                        type: "ARRAY",
+                                        items: {type: "BOOLEAN"},
+                                    },
+                                },
+                                required: ["name", "price", "people"],
                             },
                         },
-                        required: ["name", "price", "people"],
+                        receiptSubtotal: {type: "NUMBER"},
                     },
+                    required: ["items", "receiptSubtotal"],
                 },
             },
             contents: [
@@ -55,6 +63,10 @@ export async function getGeminiResponse(
                     role: "user",
                     parts: [
                         { text: systemInstructions },
+                        ...(attempt > 1 ? [{
+                            text:
+                                "This is a reanalysis attempt. Carefully inspect every line item and the receipt subtotal again before responding.",
+                        }] : []),
                         {
                             inlineData: {
                                 mimeType: resolvedMimeType,
