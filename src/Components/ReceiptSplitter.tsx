@@ -144,6 +144,7 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                     // Initialize new list if it doesn't exist
                     const newList: List = {
                         name: listName,
+                        createdAt: Date.now(),
                         groceryList: [],
                         editors: {
                             [user.uid]: {

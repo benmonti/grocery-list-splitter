@@ -9,6 +9,24 @@ import { useEffect } from "react";
 import { createNewPerson } from "../interfaces/people";
 import { getFunctions, httpsCallable } from "firebase/functions";
 
+function getListDate(list: List): number {
+    if (typeof list.createdAt === "number") {
+        return list.createdAt;
+    }
+
+    const isoDate = list.name.match(/\b\d{4}[-/]\d{1,2}[-/]\d{1,2}\b/);
+    const monthDayYear = list.name.match(
+        /\b\d{1,2}[-/]\d{1,2}[-/]\d{2,4}\b/,
+    );
+    const parsedDate = Date.parse(isoDate?.[0] || monthDayYear?.[0] || "");
+
+    return Number.isNaN(parsedDate) ? 0 : parsedDate;
+}
+
+function sortListsByCreatedDate(lists: List[]): List[] {
+    return [...lists].sort((a, b) => getListDate(b) - getListDate(a));
+}
+
 export function Dashboard({ user }: { user: fbauth.User | null }) {
     const [lists, setLists] = useState<List[]>([]);
     const [isLoadingLists, setIsLoadingLists] = useState(true);
@@ -43,7 +61,7 @@ export function Dashboard({ user }: { user: fbauth.User | null }) {
                         ...listSnap.val(),
                     });
                 }
-                setLists(loadedLists);
+                setLists(sortListsByCreatedDate(loadedLists));
             } catch (error) {
                 console.error("Failed to load grocery lists:", error);
             } finally {
@@ -68,6 +86,7 @@ export function Dashboard({ user }: { user: fbauth.User | null }) {
             const listId = listRef.key!;
             const newGroceryList: List = {
                 name: newName,
+                createdAt: Date.now(),
                 groceryList: [],
                 editors: {
                     [user.uid]: { name: user.displayName || "" },
@@ -80,7 +99,7 @@ export function Dashboard({ user }: { user: fbauth.User | null }) {
             };
             await set(listRef, newGroceryList);
             await set(ref(db, `users/${user.uid}/lists/${listId}`), true);
-            setLists((prev) => [...prev, { ...newGroceryList }]);
+            setLists((prev) => sortListsByCreatedDate([...prev, newGroceryList]));
         } catch (error) {
             console.error("Failed to write list:", error);
         }

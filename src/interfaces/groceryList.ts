@@ -4,6 +4,7 @@ import { Person } from "./people";
 
 export interface List {
     name: string;
+    createdAt?: number;
     groceryList: Item[];
     editors: Record<string, { name: string }>;
     createdBy: string;
@@ -22,6 +23,7 @@ export function copyLists(lists: List[]) {
         const newList: List = {
             id: list.id,
             name: list.name,
+            createdAt: list.createdAt,
             groceryList: copyGroceryList(list.groceryList),
             editors: { ...list.editors },
             createdBy: list.createdBy,
