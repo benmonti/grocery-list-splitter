@@ -9,7 +9,6 @@ import { UploadReciept } from "./UploadReciept";
 import * as fbauth from "firebase/auth";
 import { app, db } from "../App";
 import { onValue, ref, set } from "firebase/database";
-import { onValue, ref, set } from "firebase/database";
 import { useNavigate, useParams } from "react-router-dom";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { List } from "../interfaces/groceryList";
