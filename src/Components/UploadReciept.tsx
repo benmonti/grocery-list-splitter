@@ -28,10 +28,14 @@ export function UploadReciept({
     //     });
     // }
 
-    function extractJsonArray(text: string): string | null {
-        // look for the first `[` and the last `]`
-        const start = text.indexOf("[");
-        const end = text.lastIndexOf("]");
+    interface ReceiptAnalysis {
+        items: Item[];
+        receiptSubtotal: number;
+    }
+
+    function extractJsonObject(text: string): string | null {
+        const start = text.indexOf("{");
+        const end = text.lastIndexOf("}");
 
         if (start === -1 || end === -1) {
             return null;
@@ -130,39 +134,74 @@ export function UploadReciept({
         try {
             setProcessingStage("Preparing your receipt");
             const compressedImage = await prepareReceiptImage(file);
-            const formData = new FormData();
             const fileName =
                 compressedImage.type === "image/jpeg" ?
                     "receipt.jpg"
                 :   file.name;
-            formData.append("file", compressedImage, fileName);
 
-            setProcessingStage("Reading items and prices");
-            const res = await fetch(`${BACKEND_URL}/api/upload`, {
-                method: "POST",
-                body: formData,
-            });
+            const maxAttempts = 5;
+            let verifiedItems: Item[] | null = null;
 
-            const data = await res.json();
-            if (!res.ok || data?.error) {
-                throw new Error(data?.error || "Receipt processing failed");
+            for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+                setProcessingStage(
+                    attempt === 1 ?
+                        "Reading items and prices"
+                    :   `Reanalyzing receipt (attempt ${attempt} of ${maxAttempts})`,
+                );
+
+                const attemptFormData = new FormData();
+                attemptFormData.append("file", compressedImage, fileName);
+                attemptFormData.append("attempt", String(attempt));
+
+                const res = await fetch(`${BACKEND_URL}/api/upload`, {
+                    method: "POST",
+                    body: attemptFormData,
+                });
+                const data = await res.json();
+                if (!res.ok || data?.error) {
+                    throw new Error(data?.error || "Receipt processing failed");
+                }
+
+                const aiText: string = data?.message || "";
+                const jsonString = extractJsonObject(aiText) || aiText;
+                try {
+                    const analysis: ReceiptAnalysis = JSON.parse(jsonString);
+                    if (
+                        !Array.isArray(analysis.items) ||
+                        analysis.items.length === 0
+                    ) {
+                        throw new Error("Empty receipt analysis");
+                    }
+
+                    const itemsTotal = analysis.items.reduce(
+                        (sum, item) => sum + Number(item.price || 0),
+                        0,
+                    );
+                    const subtotalInCents = Math.round(
+                        Number(analysis.receiptSubtotal) * 100,
+                    );
+                    const itemsTotalInCents = Math.round(itemsTotal * 100);
+
+                    if (subtotalInCents === itemsTotalInCents) {
+                        verifiedItems = analysis.items;
+                        break;
+                    }
+                } catch (analysisError) {
+                    console.warn(
+                        `Receipt analysis attempt ${attempt} was invalid:`,
+                        analysisError,
+                    );
+                }
             }
 
-            const aiText: string = data?.message || "No AI Response";
-            const jsonString = extractJsonArray(aiText) || aiText;
-
-            if (!jsonString) {
-                throw new Error("Receipt response did not contain a grocery list");
+            if (!verifiedItems) {
+                throw new Error(
+                    "The receipt totals could not be verified. Please try a clearer photo.",
+                );
             }
 
             setProcessingStage("Building your grocery list");
-            const newGroceryList: Item[] = JSON.parse(jsonString);
-            if (!Array.isArray(newGroceryList) || newGroceryList.length === 0) {
-                throw new Error(
-                    "We could not identify readable grocery items in this receipt.",
-                );
-            }
-            setGroceryList(newGroceryList);
+            setGroceryList(verifiedItems);
         } catch (error) {
             console.error("Receipt processing failed:", error);
             alert(

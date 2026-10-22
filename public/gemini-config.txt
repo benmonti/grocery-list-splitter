@@ -1,18 +1,24 @@
-Analyze the receipt image and return only a JSON array. Create one object per
-distinct grocery item with this exact shape:
+Analyze the receipt image and return only a JSON object with this exact shape:
 
 {
-  "name": "string",
-  "price": 0.0,
-  "people": [false, false, ...]
+  "items": [
+    {
+      "name": "string",
+      "price": 0.0,
+      "people": [false, false, ...]
+    }
+  ],
+  "receiptSubtotal": 0.0
 }
 
 Rules:
 1. Combine duplicate items and sum their post-discount prices.
-2. Use the numeric item price after discounts, not subtotal, tax, or total.
-3. Use a generic, clear name without losing meaning. For example, "Downy Ultra
+2. Use the numeric item price after discounts.
+3. Set receiptSubtotal to the receipt's subtotal before tax, not the tax or
+   final total. It must equal the sum of all returned item prices.
+4. Use a generic, clear name without losing meaning. For example, "Downy Ultra
    Liquid Fabric Conditioner" becomes "Fabric Softener".
-4. Set people to [false, false] for every item.
-5. If the image is not a readable receipt, return [].
+5. Set people to [false, false] for every item.
+6. If the image is not a readable receipt, return {"items":[],"receiptSubtotal":0}.
 
 Return no markdown, explanation, or extra text.

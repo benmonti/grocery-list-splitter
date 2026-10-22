@@ -40,7 +40,11 @@ app.post("/api/generate", async (req, res) => {
             return res.status(400).json({ error: "Missing image" });
         }
 
-        const text = await getGeminiResponse(image, req.body.mimeType);
+        const text = await getGeminiResponse(
+            image,
+            req.body.mimeType,
+            Number(req.body.attempt) || 1,
+        );
         res.json({ message: text });
     } catch (error) {
         console.error("Error in /api/generate:", error);
