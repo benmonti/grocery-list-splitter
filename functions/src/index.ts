@@ -1,63 +1,47 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * import {onCall} from "firebase-functions/v2/https";
- * import {onDocumentWritten} from "firebase-functions/v2/firestore";
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
-
 import {setGlobalOptions} from "firebase-functions";
-// import { onRequest } from "firebase-functions/https";
-// import * as logger from "firebase-functions/logger";
 import * as admin from "firebase-admin";
-import {onCall, HttpsError, onRequest} from "firebase-functions/v2/https";
+import {HttpsError, onCall, onRequest} from "firebase-functions/v2/https";
 
 admin.initializeApp();
 
 interface RegisterEmailData {
-    email: string;
+  email: string;
 }
 
-export const registerEmail = onCall<
-    RegisterEmailData,
-    Promise<{success: boolean}>
->(async (request) => {
-  const email = request.data.email;
-  const uid = request.auth?.uid;
+export const registerEmail = onCall<RegisterEmailData>(
+  async (request) => {
+    const email = request.data.email;
+    const uid = request.auth?.uid;
 
-  if (!email || !uid) {
-    throw new HttpsError("invalid-argument", "Email required");
-  }
+    if (!email || !uid) {
+      throw new HttpsError("invalid-argument", "Email required");
+    }
 
-  const sanitizedEmail = email.toLowerCase().replace(/\./g, ",");
-  await admin.database().ref(`userEmails/${sanitizedEmail}`).set(uid);
+    const sanitizedEmail = email.toLowerCase().replace(/\./g, ",");
+    await admin.database().ref(`userEmails/${sanitizedEmail}`).set(uid);
 
-  const displayName = request.auth?.token?.name || "";
-  await admin.database().ref(`users/${uid}/profile`).set({
-    name: displayName,
-    email: email,
-  });
+    const displayName = request.auth?.token?.name || "";
+    await admin.database().ref(`users/${uid}/profile`).set({
+      name: displayName,
+      email,
+    });
 
-  return {success: true};
-});
+    return {success: true};
+  },
+);
 
 export const shareList = onCall<
-  {listId: string; invitedUids?: string[]; invitedUid?: string},
   {listId: string; invitedUids?: string[]; invitedUid?: string},
   Promise<{success: boolean}>
 >(async (request) => {
   const {listId} = request.data;
   const invitedUids = request.data.invitedUids ||
     (request.data.invitedUid ? [request.data.invitedUid] : []);
-  const {listId} = request.data;
-  const invitedUids = request.data.invitedUids ||
-    (request.data.invitedUid ? [request.data.invitedUid] : []);
   const uid = request.auth?.uid;
+
   if (!uid) {
     throw new HttpsError("unauthenticated", "Must be logged in to share");
   }
-  if (!listId || invitedUids.length === 0) {
   if (!listId || invitedUids.length === 0) {
     throw new HttpsError("invalid-argument", "Missing parameters");
   }
@@ -76,43 +60,22 @@ export const shareList = onCall<
         .ref(`users/${invitedUid}/profile`)
         .once("value");
       const userName = profileSnapshot.val()?.name || "";
-    const database = admin.database();
-    const listSnapshot = await database.ref(`lists/${listId}`).once("value");
-    const list = listSnapshot.val();
-    if (!list || !list.editors?.[uid]) {
-      throw new HttpsError("permission-denied", "You cannot share this list");
-    }
-
-    const updates: Record<string, string | boolean> = {};
-    for (const invitedUid of [...new Set(invitedUids)]) {
-      const profileSnapshot = await database
-        .ref(`users/${invitedUid}/profile`)
-        .once("value");
-      const userName = profileSnapshot.val()?.name || "";
 
       updates[`lists/${listId}/editors/${invitedUid}/name`] = userName;
       updates[`users/${invitedUid}/lists/${listId}`] = true;
     }
 
     await database.ref().update(updates);
-      updates[`lists/${listId}/editors/${invitedUid}/name`] = userName;
-      updates[`users/${invitedUid}/lists/${listId}`] = true;
-    }
-
-    await database.ref().update(updates);
-
     return {success: true};
-  } catch (err) {
-    if (err instanceof HttpsError) throw err;
-    if (err instanceof HttpsError) throw err;
+  } catch (error) {
+    if (error instanceof HttpsError) {
+      throw error;
+    }
     throw new HttpsError("internal", "Failed to share list");
   }
 });
 
-export const searchUsers = onCall<
-  {query: string},
-  Promise<{users: {uid: string; name: string; email: string}[]}>
->(async (request) => {
+export const searchUsers = onCall<{query: string}>(async (request) => {
   const query = request.data.query?.trim().toLowerCase();
   if (!request.auth?.uid) {
     throw new HttpsError("unauthenticated", "Must be logged in to search");
@@ -125,8 +88,9 @@ export const searchUsers = onCall<
   const users = usersSnapshot.val() || {};
   const matches = Object.entries(users)
     .map(([uid, value]) => {
-      const profile = (value as {profile?: {name?: string; email?: string}})
-        .profile || {};
+      const profile = (value as {
+        profile?: {name?: string; email?: string};
+      }).profile || {};
       return {
         uid,
         name: profile.name || "",
@@ -141,10 +105,10 @@ export const searchUsers = onCall<
   return {users: matches};
 });
 
-export const removeListMember = onCall<
-  {listId: string; memberUid: string},
-  Promise<{success: boolean}>
->(async (request) => {
+export const removeListMember = onCall<{
+  listId: string;
+  memberUid: string;
+}>(async (request) => {
   const {listId, memberUid} = request.data;
   const uid = request.auth?.uid;
 
@@ -196,10 +160,7 @@ export const removeListMember = onCall<
   return {success: true};
 });
 
-export const deleteList = onCall<
-  {listId: string},
-  Promise<{success: boolean}>
->(async (request) => {
+export const deleteList = onCall<{listId: string}>(async (request) => {
   const {listId} = request.data;
   const uid = request.auth?.uid;
 
@@ -217,9 +178,7 @@ export const deleteList = onCall<
   const listSnapshot = await database.ref(`lists/${listId}`).once("value");
   const list = listSnapshot.val();
 
-  if (!list) {
-    return {success: true};
-  }
+  if (!list) return {success: true};
 
   const editors = list.editors || {};
   if (!editors[uid]) {
@@ -229,7 +188,6 @@ export const deleteList = onCall<
   const updates: Record<string, null> = {
     [`lists/${listId}`]: null,
   };
-
   Object.keys(editors).forEach((editorUid) => {
     updates[`users/${editorUid}/lists/${listId}`] = null;
   });
@@ -238,23 +196,18 @@ export const deleteList = onCall<
   return {success: true};
 });
 
-
 export const getUserProfile = onRequest(
   {cors: true},
   async (req, res) => {
     try {
       const authHeader = req.headers.authorization || "";
-      // Must be in the form "Bearer <token>"
       const match = authHeader.match(/^Bearer (.*)$/);
       if (!match) {
         res.status(401).json({error: "Unauthorized - no token"});
         return;
       }
 
-      const idToken = match[1];
-      const decodedToken = await admin.auth().verifyIdToken(idToken);
-
-      // enforce that users can only fetch profiles if they are editors
+      const decodedToken = await admin.auth().verifyIdToken(match[1]);
       const listEditorSnap = await admin.database()
         .ref(`lists/${req.query.listId}/editors/${decodedToken.uid}`)
         .once("value");
@@ -274,24 +227,12 @@ export const getUserProfile = onRequest(
         .ref(`users/${uid}/profile`)
         .once("value");
       res.status(200).json(userRecord.val());
-    } catch (err) {
-      res.status(500).json({erros: (err as Error)?.message || String(err)});
+    } catch (error) {
+      res.status(500).json({
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
-  }
+  },
 );
-// For cost control, you can set the maximum number of containers that can be
-// running at the same time. This helps mitigate the impact of unexpected
-// traffic spikes by instead downgrading performance. This limit is a
-// per-function limit. You can override the limit for each function using the
-// `maxInstances` option in the function's options, e.g.
-// `onRequest({ maxInstances: 5 }, (req, res) => { ... })`.
-// NOTE: setGlobalOptions does not apply to functions using the v1 API. V1
-// functions should each use functions.runWith({ maxInstances: 10 }) instead.
-// In the v1 API, each function can only serve one request per container, so
-// this will be the maximum concurrent request count.
-setGlobalOptions({maxInstances: 10});
 
-// export const helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+setGlobalOptions({maxInstances: 10});
