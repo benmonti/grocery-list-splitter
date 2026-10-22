@@ -1,6 +1,5 @@
-Analyze the following image of a receipt. Return only a 
-JSON array where each element is an object representing 
-an item in the following format:
+Analyze the receipt image and return only a JSON array. Create one object per
+distinct grocery item with this exact shape:
 
 {
   "name": "string",
@@ -8,46 +7,12 @@ an item in the following format:
   "people": [false, false, ...]
 }
 
-1. name should be the exact item name from the receipt. If there are duplicates of an item,
-    the items should be combined into 1 entry and the price for that entry should be the 
-    prices of each duplicate added together after discounts.
-2. price should be the numeric value of the item minus any discounts.
-3. people should be an array of false values, one for 
-    each person (assume 2 people for example if not specified).
+Rules:
+1. Combine duplicate items and sum their post-discount prices.
+2. Use the numeric item price after discounts, not subtotal, tax, or total.
+3. Use a generic, clear name without losing meaning. For example, "Downy Ultra
+   Liquid Fabric Conditioner" becomes "Fabric Softener".
+4. Set people to [false, false] for every item.
+5. If the image is not a readable receipt, return [].
 
-Do not include any text, explanations, or markdown—just return the JSON array.
-If the image is not a reciept or cannot be read at all, return "Cannot Read Image".
-
-Use generic names, especially for long or abbreviated names.
-Use info from stores and their databases.
-Ex. chrmn ess str 6mr sp m -> Charmin Essentials Strong 6 Mega Rolls -> Toilet Paper
-Ex. Downy Ultra Liquid Fabric Conditioner -> Fabric Softener
-Ex. Kirkland Signature Meatballs -> Meatballs
-
-Make it as generic as possible without losing it's meaning.
-
-Object should be a parseable json without any extra words, characters, spaces, etc.
-The exact format of the response should be:
-
-[
-  {
-    "name": "string",
-    "price": number,
-    "people": [boolean, boolean]
-  },
-  {
-    "name": "string",
-    "price": number,
-    "people": [boolean, boolean]
-  },
-  {
-    "name": "string",
-    "price": number,
-    "people": [boolean, boolean]
-  },
-  {
-    "name": "string",
-    "price": number,
-    "people": [boolean, boolean]
-  }
-]
+Return no markdown, explanation, or extra text.

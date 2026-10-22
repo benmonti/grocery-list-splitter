@@ -11,12 +11,15 @@ function stripBase64Prefix(dataUrl: string): string {
     return dataUrl.replace(/^data:image\/\w+;base64,/, "");
 }
 
-function extractMimeType(dataUrl: string): string {
-    const match = dataUrl.match(/^data:(image\/\w+);base64,/);
-    return match?.[1] ?? "image/jpeg";
+function extractMimeType(dataUrl: string, fallback = "image/jpeg"): string {
+    const match = dataUrl.match(/^data:(image\/[\w.+-]+);base64,/);
+    return match?.[1] ?? fallback;
 }
 
-export async function getGeminiResponse(image: string) {
+export async function getGeminiResponse(
+    image: string,
+    mimeType = "image/jpeg",
+) {
     if (!image || typeof image !== "string" || !image.trim()) {
         return "No Image Provided";
     }
@@ -24,11 +27,29 @@ export async function getGeminiResponse(image: string) {
     try {
         const systemInstructions = fs.readFileSync(FILE_PATH, "utf-8");
 
-        const mimeType = extractMimeType(image);
+        const resolvedMimeType = extractMimeType(image, mimeType);
         const base64Image = stripBase64Prefix(image);
 
         const result = await ai.models.generateContent({
             model: "gemini-2.5-flash",
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: "ARRAY",
+                    items: {
+                        type: "OBJECT",
+                        properties: {
+                            name: {type: "STRING"},
+                            price: {type: "NUMBER"},
+                            people: {
+                                type: "ARRAY",
+                                items: {type: "BOOLEAN"},
+                            },
+                        },
+                        required: ["name", "price", "people"],
+                    },
+                },
+            },
             contents: [
                 {
                     role: "user",
@@ -36,7 +57,7 @@ export async function getGeminiResponse(image: string) {
                         { text: systemInstructions },
                         {
                             inlineData: {
-                                mimeType: mimeType,
+                                mimeType: resolvedMimeType,
                                 data: base64Image,
                             },
                         },

@@ -4,8 +4,6 @@ import cors from "cors";
 import { getGeminiResponse } from "./ai.js";
 import { BACKEND_URL } from "./url.js";
 import multer from "multer";
-import path from "path";
-import fs from "fs";
 
 dotenv.config();
 
@@ -41,7 +39,7 @@ app.post("/api/generate", async (req, res) => {
             return res.status(400).json({ error: "Missing image" });
         }
 
-        const text = await getGeminiResponse(image);
+        const text = await getGeminiResponse(image, req.body.mimeType);
         res.json({ message: text });
     } catch (error) {
         console.error("Error in /api/generate:", error);
@@ -49,15 +47,8 @@ app.post("/api/generate", async (req, res) => {
     }
 });
 
-const storage = multer.diskStorage({
-    destination: "./uploads/",
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + path.extname(file.originalname));
-    },
-});
-
 const upload = multer({
-    storage,
+    storage: multer.memoryStorage(),
     limits: { fileSize: 25 * 1024 * 1024, files: 1 },
 }); // Limit to 25MB
 
@@ -70,25 +61,19 @@ app.post(
                 return res.status(400).json({ error: "No file uploaded" });
             }
 
-            const filePath = req.file.path;
-            const fileBuffer = fs.readFileSync(filePath);
-
-            const base64Image = fileBuffer.toString("base64");
+            const base64Image = req.file.buffer.toString("base64");
             console.log("Received image length:", base64Image.length);
 
             const response = await fetch(`${BACKEND_URL}/api/generate`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ image: base64Image }),
+                body: JSON.stringify({
+                    image: base64Image,
+                    mimeType: req.file.mimetype,
+                }),
             });
 
             const data = await response.json();
-
-            fs.unlinkSync(filePath, (err) => {
-                if (err) {
-                    console.error("Failed to delete upload:", err);
-                }
-            }); // Clean up uploaded file
 
             res.json(data);
         } catch (err) {
