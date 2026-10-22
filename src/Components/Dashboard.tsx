@@ -2,15 +2,15 @@ import { useState } from "react";
 import { List } from "../interfaces/groceryList";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import * as fbauth from "firebase/auth";
-import { db, auth } from "../App";
+import { app, db, auth } from "../App";
 import { useNavigate } from "react-router-dom";
 import { get, onValue, push, ref, set } from "firebase/database";
 import { useEffect } from "react";
 import { createNewPerson } from "../interfaces/people";
+import { getFunctions, httpsCallable } from "firebase/functions";
 
 export function Dashboard({ user }: { user: fbauth.User | null }) {
     const [lists, setLists] = useState<List[]>([]);
-    const [refreshKey, setRefreshKey] = useState(0);
     const [isLoadingLists, setIsLoadingLists] = useState(true);
 
     const navigate = useNavigate();
@@ -53,7 +53,7 @@ export function Dashboard({ user }: { user: fbauth.User | null }) {
 
         // Cleanup the listener when the component unmounts
         return () => unsubscribe();
-    }, [user, refreshKey]);
+    }, [user]);
 
     const handleSignOut = async () => {
         await fbauth.signOut(auth);
@@ -90,13 +90,15 @@ export function Dashboard({ user }: { user: fbauth.User | null }) {
         if (!user) return;
 
         try {
-            // Remove the list from Firebase
-            await Promise.all([
-                set(ref(db, `lists/${listId}`), null),
-                set(ref(db, `users/${user.uid}/lists/${listId}`), null),
-            ]);
+            const functions = getFunctions(app);
+            const deleteListFn = httpsCallable(functions, "deleteList");
+            await deleteListFn({ listId });
+            setLists((currentLists) =>
+                currentLists.filter((list) => list.id !== listId),
+            );
         } catch (err) {
             console.error("Failed to delete list:", err);
+            alert("Failed to delete list. Please try again.");
         }
     }
 
@@ -110,17 +112,17 @@ export function Dashboard({ user }: { user: fbauth.User | null }) {
             const data = userListsSnapshot.val() || {};
             const listIds = Object.keys(data);
 
+            const functions = getFunctions(app);
+            const deleteListFn = httpsCallable(functions, "deleteList");
             const deletePromises = listIds.map((listId) =>
-                Promise.all([
-                    set(ref(db, `lists/${listId}`), null),
-                    set(ref(db, `users/${user.uid}/lists/${listId}`), null),
-                ]),
+                deleteListFn({ listId }),
             );
 
             await Promise.all(deletePromises);
-            setRefreshKey((prev) => prev + 1);
+            setLists([]);
         } catch (err) {
             console.error("Failed to clear lists:", err);
+            alert("Failed to clear lists. Please try again.");
         }
     }
 

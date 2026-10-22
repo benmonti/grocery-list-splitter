@@ -80,6 +80,48 @@ export const shareList = onCall<
   }
 });
 
+export const deleteList = onCall<
+  {listId: string},
+  Promise<{success: boolean}>
+>(async (request) => {
+  const {listId} = request.data;
+  const uid = request.auth?.uid;
+
+  if (!uid) {
+    throw new HttpsError(
+      "unauthenticated",
+      "Must be logged in to delete a list",
+    );
+  }
+  if (!listId) {
+    throw new HttpsError("invalid-argument", "Missing list ID");
+  }
+
+  const database = admin.database();
+  const listSnapshot = await database.ref(`lists/${listId}`).once("value");
+  const list = listSnapshot.val();
+
+  if (!list) {
+    return {success: true};
+  }
+
+  const editors = list.editors || {};
+  if (!editors[uid]) {
+    throw new HttpsError("permission-denied", "You cannot delete this list");
+  }
+
+  const updates: Record<string, null> = {
+    [`lists/${listId}`]: null,
+  };
+
+  Object.keys(editors).forEach((editorUid) => {
+    updates[`users/${editorUid}/lists/${listId}`] = null;
+  });
+
+  await database.ref().update(updates);
+  return {success: true};
+});
+
 
 export const getUserProfile = onRequest(
   {cors: true},
