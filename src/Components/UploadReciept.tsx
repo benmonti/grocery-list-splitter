@@ -61,7 +61,7 @@ export function UploadReciept({
                 const converted = await heic2any({
                     blob: file,
                     toType: "image/jpeg",
-                    quality: 0.9,
+                    quality: 0.95,
                 });
                 imageFile = Array.isArray(converted) ? converted[0] : converted;
             } catch (error) {
@@ -96,7 +96,7 @@ export function UploadReciept({
             };
 
             image.onload = () => {
-                const maxDimension = 1800;
+                const maxDimension = 2400;
                 const scale = Math.min(
                     1,
                     maxDimension /
@@ -123,7 +123,7 @@ export function UploadReciept({
                         resolve(blob);
                     },
                     "image/jpeg",
-                    0.82,
+                    0.9,
                 );
             };
             image.onerror = () => {
@@ -158,11 +158,11 @@ export function UploadReciept({
                 body: formData,
             });
 
-            if (!res.ok) {
-                throw new Error("Receipt processing failed");
+            const data = await res.json();
+            if (!res.ok || data?.error) {
+                throw new Error(data?.error || "Receipt processing failed");
             }
 
-            const data = await res.json();
             const aiText: string = data?.message || "No AI Response";
             const jsonString = extractJsonArray(aiText) || aiText;
 
@@ -172,6 +172,11 @@ export function UploadReciept({
 
             setProcessingStage("Building your grocery list");
             const newGroceryList: Item[] = JSON.parse(jsonString);
+            if (!Array.isArray(newGroceryList) || newGroceryList.length === 0) {
+                throw new Error(
+                    "We could not identify readable grocery items in this receipt.",
+                );
+            }
             setGroceryList(newGroceryList);
         } catch (error) {
             console.error("Receipt processing failed:", error);

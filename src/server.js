@@ -4,6 +4,7 @@ import cors from "cors";
 import { getGeminiResponse } from "./ai.js";
 import { BACKEND_URL } from "./url.js";
 import multer from "multer";
+import convertHeic from "heic-convert";
 
 dotenv.config();
 
@@ -52,6 +53,14 @@ const upload = multer({
     limits: { fileSize: 25 * 1024 * 1024, files: 1 },
 }); // Limit to 25MB
 
+function isHeicUpload(file) {
+    return (
+        file.mimetype === "image/heic" ||
+        file.mimetype === "image/heif" ||
+        /\.(heic|heif)$/i.test(file.originalname)
+    );
+}
+
 app.post(
     "/api/upload",
     upload.single("file"),
@@ -61,7 +70,27 @@ app.post(
                 return res.status(400).json({ error: "No file uploaded" });
             }
 
-            const base64Image = req.file.buffer.toString("base64");
+            let imageBuffer = req.file.buffer;
+            let mimeType = req.file.mimetype;
+
+            if (isHeicUpload(req.file)) {
+                try {
+                    imageBuffer = await convertHeic({
+                        buffer: req.file.buffer,
+                        format: "JPEG",
+                        quality: 0.9,
+                    });
+                    mimeType = "image/jpeg";
+                } catch (conversionError) {
+                    console.error("HEIC conversion failed:", conversionError);
+                    return res.status(415).json({
+                        error:
+                            "This HEIC image could not be converted. Please upload it as a JPEG or PNG.",
+                    });
+                }
+            }
+
+            const base64Image = Buffer.from(imageBuffer).toString("base64");
             console.log("Received image length:", base64Image.length);
 
             const response = await fetch(`${BACKEND_URL}/api/generate`, {
@@ -69,13 +98,13 @@ app.post(
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     image: base64Image,
-                    mimeType: req.file.mimetype,
+                    mimeType,
                 }),
             });
 
             const data = await response.json();
 
-            res.json(data);
+            res.status(response.status).json(data);
         } catch (err) {
             console.error("Error in /api/upload:", err);
             res.status(500).json({
