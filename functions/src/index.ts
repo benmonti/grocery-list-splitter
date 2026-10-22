@@ -117,6 +117,7 @@ export const searchUsers = onCall<
   return {users: matches};
 });
 
+<<<<<<< Updated upstream
 export const removeListMember = onCall<
   {listId: string; memberUid: string},
   Promise<{success: boolean}>
@@ -172,6 +173,8 @@ export const removeListMember = onCall<
   return {success: true};
 });
 
+=======
+>>>>>>> Stashed changes
 export const deleteList = onCall<
   {listId: string},
   Promise<{success: boolean}>

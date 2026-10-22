@@ -9,6 +9,7 @@ import { UploadReciept } from "./UploadReciept";
 import * as fbauth from "firebase/auth";
 import { app, db } from "../App";
 import { onValue, ref, set } from "firebase/database";
+import { onValue, ref, set } from "firebase/database";
 import { useNavigate, useParams } from "react-router-dom";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { List } from "../interfaces/groceryList";
@@ -263,6 +264,8 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
     async function handleShare() {
         if (selectedPeople.length === 0) {
             alert("Choose at least one person to share with");
+        if (selectedPeople.length === 0) {
+            alert("Choose at least one person to share with");
             return;
         }
 
@@ -273,8 +276,13 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
             await shareListFn({
                 listId,
                 invitedUids: selectedPeople.map((person) => person.uid),
+                invitedUids: selectedPeople.map((person) => person.uid),
             });
 
+            alert("List shared successfully");
+            setShareSearch("");
+            setShareSuggestions([]);
+            setSelectedPeople([]);
             alert("List shared successfully");
             setShareSearch("");
             setShareSuggestions([]);
@@ -628,6 +636,9 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                         disabled={Boolean(shareStatus)}
                         onClick={() => {
                             setShowShareForm(false);
+                            setShareSearch("");
+                            setShareSuggestions([]);
+                            setSelectedPeople([]);
                             setShareSearch("");
                             setShareSuggestions([]);
                             setSelectedPeople([]);
