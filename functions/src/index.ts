@@ -117,6 +117,61 @@ export const searchUsers = onCall<
   return {users: matches};
 });
 
+export const removeListMember = onCall<
+  {listId: string; memberUid: string},
+  Promise<{success: boolean}>
+>(async (request) => {
+  const {listId, memberUid} = request.data;
+  const uid = request.auth?.uid;
+
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Must be logged in");
+  }
+  if (!listId || !memberUid) {
+    throw new HttpsError("invalid-argument", "Missing parameters");
+  }
+  if (uid === memberUid) {
+    throw new HttpsError("invalid-argument", "You cannot remove yourself");
+  }
+
+  const database = admin.database();
+  const listRef = database.ref(`lists/${listId}`);
+  const listSnapshot = await listRef.once("value");
+  const list = listSnapshot.val();
+
+  if (!list) return {success: true};
+  if (!list.editors?.[uid]) {
+    throw new HttpsError("permission-denied", "You cannot edit this list");
+  }
+  if (!list.editors?.[memberUid]) {
+    return {success: true};
+  }
+
+  const editorUids = Object.keys(list.editors);
+  const memberIndex = editorUids.indexOf(memberUid);
+  const groceryList = Array.isArray(list.groceryList) ? list.groceryList : [];
+  const updatedGroceryList = groceryList.map((item: {
+    people?: boolean[];
+  }) => ({
+    ...item,
+    people: Array.isArray(item.people) ?
+      item.people.filter((_: boolean, index: number) => index !== memberIndex) :
+      item.people,
+  }));
+  const updatedPeople = Array.isArray(list.people) ?
+    list.people.filter((_: unknown, index: number) => index !== memberIndex) :
+    list.people;
+
+  await database.ref().update({
+    [`lists/${listId}/editors/${memberUid}`]: null,
+    [`lists/${listId}/groceryList`]: updatedGroceryList,
+    [`lists/${listId}/people`]: updatedPeople,
+    [`users/${memberUid}/lists/${listId}`]: null,
+  });
+
+  return {success: true};
+});
+
 export const deleteList = onCall<
   {listId: string},
   Promise<{success: boolean}>

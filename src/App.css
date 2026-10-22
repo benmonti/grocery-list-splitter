@@ -558,12 +558,88 @@ input:focus-visible {
     right: 152px;
     z-index: 20;
     display: flex;
+    flex-direction: column;
     gap: 8px;
     padding: 12px;
     border: 1px solid var(--line);
     border-radius: 12px;
     background: var(--surface);
     box-shadow: var(--shadow);
+}
+
+.list-members {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+}
+
+.share-operation-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: var(--accent-soft);
+    color: var(--accent-dark);
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.share-section-label {
+    margin: 0 0 2px;
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.list-member {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 280px;
+}
+
+.list-member-details {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.list-member-details strong,
+.list-member-details small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.list-member-details strong {
+    font-size: 0.85rem;
+}
+
+.list-member-details small {
+    color: var(--muted);
+    font-size: 0.74rem;
+}
+
+.remove-member-button {
+    flex: 0 0 auto;
+    padding: 6px 8px;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--danger);
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.remove-member-button:hover {
+    background: #f9e9e7;
 }
 
 .share-form input {

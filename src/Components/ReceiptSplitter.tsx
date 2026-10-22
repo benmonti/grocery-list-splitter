@@ -19,6 +19,10 @@ interface PersonProfile {
     email: string;
 }
 
+interface ListMember extends PersonProfile {
+    uid: string;
+}
+
 function formatDistinctNames(profiles: PersonProfile[]): string[] {
     const parsedProfiles = profiles.map((profile) => {
         const nameParts = profile.name.trim().split(/\s+/).filter(Boolean);
@@ -98,7 +102,9 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
     const [selectedPeople, setSelectedPeople] = useState<
         {uid: string; name: string; email: string}[]
     >([]);
+    const [listMembers, setListMembers] = useState<ListMember[]>([]);
     const [isSearchingPeople, setIsSearchingPeople] = useState(false);
+    const [shareStatus, setShareStatus] = useState<string | null>(null);
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [isLoadingList, setIsLoadingList] = useState(true);
     const { listId } = useParams();
@@ -151,6 +157,13 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                             total: 0,
                         },
                     ]);
+                    setListMembers([
+                        {
+                            uid: user.uid,
+                            name: user.displayName || "",
+                            email: user.email || "",
+                        },
+                    ]);
                 } else {
                     setGroceryList(
                         Array.isArray(data.groceryList) ? data.groceryList : [],
@@ -180,11 +193,17 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                             console.error("Profile fetch failed for uid", uid, err);
                         }
 
-                        return profile;
+                        return {uid, ...profile};
                     });
 
                     const profiles = await Promise.all(peoplePromises);
                     const displayNames = formatDistinctNames(profiles);
+                    setListMembers(
+                        profiles.map((profile, index) => ({
+                            ...profile,
+                            name: displayNames[index],
+                        })),
+                    );
                     let newPeople = profiles.map((profile, index) => ({
                         name: displayNames[index],
                         total: 0,
@@ -248,6 +267,7 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
         }
 
         try {
+            setShareStatus("Sharing the list…");
             const functions = getFunctions(app);
             const shareListFn = httpsCallable(functions, "shareList");
             await shareListFn({
@@ -263,6 +283,43 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
         } catch (err) {
             alert("Failed to share list");
             console.error("Error sharing list:", err);
+        } finally {
+            setShareStatus(null);
+        }
+    }
+
+    async function handleRemoveMember(member: ListMember) {
+        if (!listId || member.uid === user?.uid) return;
+        if (
+            !window.confirm(
+                `Remove ${member.name || member.email} from this list?`,
+            )
+        ) {
+            return;
+        }
+
+        try {
+            setShareStatus(`Removing ${member.name || "person"}…`);
+            const functions = getFunctions(app);
+            const removeMemberFn = httpsCallable(
+                functions,
+                "removeListMember",
+            );
+            await removeMemberFn({
+                listId,
+                memberUid: member.uid,
+            });
+            setListMembers((current) =>
+                current.filter(
+                    (currentMember) => currentMember.uid !== member.uid,
+                ),
+            );
+            alert("Person removed from the list");
+        } catch (error) {
+            console.error("Failed to remove list member:", error);
+            alert("Failed to remove person from the list");
+        } finally {
+            setShareStatus(null);
         }
     }
 
@@ -457,6 +514,43 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
             </button>
             {showShareForm && (
                 <div className="share-form share-form-fixed">
+                    {shareStatus && (
+                        <div className="share-operation-status" role="status">
+                            <span
+                                className="loading-spinner small"
+                                aria-hidden="true"
+                            />
+                            {shareStatus}
+                        </div>
+                    )}
+                    <div className="list-members">
+                        <p className="share-section-label">People with access</p>
+                        {listMembers.map((member) => (
+                            <div className="list-member" key={member.uid}>
+                                <span className="suggestion-avatar">
+                                    {(member.name || member.email)
+                                        .charAt(0)
+                                        .toUpperCase()}
+                                </span>
+                                <span className="list-member-details">
+                                    <strong>{member.name || "Unnamed user"}</strong>
+                                    <small>{member.email}</small>
+                                </span>
+                                {member.uid !== user?.uid && (
+                                    <button
+                                        type="button"
+                                        className="remove-member-button"
+                                        onClick={() =>
+                                            handleRemoveMember(member)
+                                        }
+                                        disabled={Boolean(shareStatus)}
+                                    >
+                                        Remove
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                    </div>
                     <div className="share-picker">
                         <div className="share-selected">
                             {selectedPeople.map((person) => (
@@ -524,11 +618,14 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                     </div>
                     <button
                         onClick={handleShare}
-                        disabled={selectedPeople.length === 0}
+                        disabled={
+                            selectedPeople.length === 0 || Boolean(shareStatus)
+                        }
                     >
                         Share
                     </button>
                     <button
+                        disabled={Boolean(shareStatus)}
                         onClick={() => {
                             setShowShareForm(false);
                             setShareSearch("");
