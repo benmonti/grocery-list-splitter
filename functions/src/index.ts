@@ -43,41 +43,120 @@ export const registerEmail = onCall<
 });
 
 export const shareList = onCall<
-  { listId: string; invitedUid: string },
+  {listId: string; invitedUids?: string[]; invitedUid?: string},
   Promise<{success: boolean}>
 >(async (request) => {
-  const {listId, invitedUid} = request.data;
+  const {listId} = request.data;
+  const invitedUids = request.data.invitedUids ||
+    (request.data.invitedUid ? [request.data.invitedUid] : []);
   const uid = request.auth?.uid;
   if (!uid) {
     throw new HttpsError("unauthenticated", "Must be logged in to share");
   }
-  if (!listId || !invitedUid) {
+  if (!listId || invitedUids.length === 0) {
     throw new HttpsError("invalid-argument", "Missing parameters");
   }
 
   try {
-    // Add invitedUid to editors
-    const profile = await admin.database()
-      .ref(`users/${invitedUid}/profile`)
-      .once("value");
-    let userName = profile.val();
-    userName = userName?.name || "";
+    const database = admin.database();
+    const listSnapshot = await database.ref(`lists/${listId}`).once("value");
+    const list = listSnapshot.val();
+    if (!list || !list.editors?.[uid]) {
+      throw new HttpsError("permission-denied", "You cannot share this list");
+    }
 
-    await admin
-      .database()
-      .ref(`lists/${listId}/editors/${invitedUid}/name`)
-      .set(userName);
+    const updates: Record<string, string | boolean> = {};
+    for (const invitedUid of [...new Set(invitedUids)]) {
+      const profileSnapshot = await database
+        .ref(`users/${invitedUid}/profile`)
+        .once("value");
+      const userName = profileSnapshot.val()?.name || "";
 
-    // Add list to the invited user’s list collection
-    await admin
-      .database()
-      .ref(`users/${invitedUid}/lists/${listId}`)
-      .set(true);
+      updates[`lists/${listId}/editors/${invitedUid}/name`] = userName;
+      updates[`users/${invitedUid}/lists/${listId}`] = true;
+    }
+
+    await database.ref().update(updates);
 
     return {success: true};
   } catch (err) {
+    if (err instanceof HttpsError) throw err;
     throw new HttpsError("internal", "Failed to share list");
   }
+});
+
+export const searchUsers = onCall<
+  {query: string},
+  Promise<{users: {uid: string; name: string; email: string}[]}>
+>(async (request) => {
+  const query = request.data.query?.trim().toLowerCase();
+  if (!request.auth?.uid) {
+    throw new HttpsError("unauthenticated", "Must be logged in to search");
+  }
+  if (!query || query.length < 2) {
+    return {users: []};
+  }
+
+  const usersSnapshot = await admin.database().ref("users").once("value");
+  const users = usersSnapshot.val() || {};
+  const matches = Object.entries(users)
+    .map(([uid, value]) => {
+      const profile = (value as {profile?: {name?: string; email?: string}})
+        .profile || {};
+      return {
+        uid,
+        name: profile.name || "",
+        email: profile.email || "",
+      };
+    })
+    .filter((profile) =>
+      `${profile.name} ${profile.email}`.toLowerCase().includes(query),
+    )
+    .slice(0, 8);
+
+  return {users: matches};
+});
+
+export const deleteList = onCall<
+  {listId: string},
+  Promise<{success: boolean}>
+>(async (request) => {
+  const {listId} = request.data;
+  const uid = request.auth?.uid;
+
+  if (!uid) {
+    throw new HttpsError(
+      "unauthenticated",
+      "Must be logged in to delete a list",
+    );
+  }
+  if (!listId) {
+    throw new HttpsError("invalid-argument", "Missing list ID");
+  }
+
+  const database = admin.database();
+  const listSnapshot = await database.ref(`lists/${listId}`).once("value");
+  const list = listSnapshot.val();
+
+  if (!list) {
+    return {success: true};
+  }
+
+  const editors = list.editors || {};
+  if (!editors[uid]) {
+    throw new HttpsError("permission-denied", "You cannot delete this list");
+  }
+
+  const updates: Record<string, null> = {
+    [`lists/${listId}`]: null,
+  };
+
+  Object.keys(editors).forEach((editorUid) => {
+    updates[`users/${editorUid}/lists/${listId}`] = null;
+  });
+
+  await database.ref().update(updates);
+  return {success: true};
 });
 
 

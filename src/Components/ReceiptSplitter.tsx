@@ -8,11 +8,81 @@ import { TextInputAndButton } from "./TextInputAndButton";
 import { UploadReciept } from "./UploadReciept";
 import * as fbauth from "firebase/auth";
 import { app, db } from "../App";
-import { get, onValue, ref, set } from "firebase/database";
+import { onValue, ref, set } from "firebase/database";
 import { useNavigate, useParams } from "react-router-dom";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { List } from "../interfaces/groceryList";
 import { getTotals } from "../interfaces/useCalculateSplits";
+
+interface PersonProfile {
+    name: string;
+    email: string;
+}
+
+function formatDistinctNames(profiles: PersonProfile[]): string[] {
+    const parsedProfiles = profiles.map((profile) => {
+        const nameParts = profile.name.trim().split(/\s+/).filter(Boolean);
+        const firstName = nameParts[0] || "Person";
+        const lastName = nameParts.length > 1 ? nameParts.at(-1)! : "";
+
+        return {
+            firstName,
+            lastName,
+            email: profile.email,
+        };
+    });
+    const prefixLengths = parsedProfiles.map((profile) =>
+        profile.lastName ? 1 : 0,
+    );
+
+    let hasDuplicate = true;
+    while (hasDuplicate) {
+        const labels = parsedProfiles.map((profile, index) => {
+            const prefixLength = prefixLengths[index];
+            return profile.lastName ?
+                    `${profile.firstName} ${profile.lastName.slice(0, prefixLength)}`
+                :   profile.firstName;
+        });
+        const duplicateLabels = new Set(
+            labels.filter((label, index) => labels.indexOf(label) !== index),
+        );
+        hasDuplicate = duplicateLabels.size > 0;
+        let increasedPrefix = false;
+
+        duplicateLabels.forEach((label) => {
+            labels.forEach((currentLabel, index) => {
+                if (
+                    currentLabel === label &&
+                    prefixLengths[index] < parsedProfiles[index].lastName.length
+                ) {
+                    prefixLengths[index] += 1;
+                    increasedPrefix = true;
+                }
+            });
+        });
+
+        if (hasDuplicate && !increasedPrefix) {
+            break;
+        }
+    }
+
+    return parsedProfiles.map((profile, index) => {
+        const prefixLength = prefixLengths[index];
+        const name = profile.lastName ?
+                `${profile.firstName} ${profile.lastName.slice(0, prefixLength)}`
+            :   profile.firstName;
+        const duplicateName = parsedProfiles.filter(
+            (other) =>
+                other.firstName === profile.firstName &&
+                other.lastName === profile.lastName,
+        ).length > 1;
+
+        if (duplicateName && profile.email) {
+            return `${name} (${profile.email.split("@")[0]})`;
+        }
+        return name;
+    });
+}
 
 export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
     const [groceryList, setGroceryList] = useState<Item[]>([]);
@@ -21,7 +91,14 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
     // const initialList: List = state?.list;
     const [people, setPeople] = useState<Person[]>([]);
     const [showShareForm, setShowShareForm] = useState<boolean>(false);
-    const [shareEmail, setShareEmail] = useState<string>("");
+    const [shareSearch, setShareSearch] = useState("");
+    const [shareSuggestions, setShareSuggestions] = useState<
+        {uid: string; name: string; email: string}[]
+    >([]);
+    const [selectedPeople, setSelectedPeople] = useState<
+        {uid: string; name: string; email: string}[]
+    >([]);
+    const [isSearchingPeople, setIsSearchingPeople] = useState(false);
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [isLoadingList, setIsLoadingList] = useState(true);
     const { listId } = useParams();
@@ -83,37 +160,35 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
                     const editorUids = Object.keys(editorsObj);
 
                     let peoplePromises = editorUids.map(async (uid) => {
-                        let userName = "_";
+                        let profile: PersonProfile = {
+                            name: editorsObj[uid]?.name || "",
+                            email: "",
+                        };
 
                         try {
                             // Use cached profile if available
                             if (profileCache.current[uid]) {
-                                const cached = profileCache.current[uid];
-                                if (cached.name) {
-                                    const nameArr = cached.name.split(" ");
-                                    userName = `${nameArr[0]}${nameArr[1] ? " " + nameArr[1][0] + "." : ""}`;
-                                }
+                                profile = profileCache.current[uid];
                             } else {
                                 const profileData = await getUserProfile(uid);
                                 if (profileData) {
                                     profileCache.current[uid] = profileData; // cache it
-                                    if (profileData.name) {
-                                        const nameArr = profileData.name.split(" ");
-                                        userName = `${nameArr[0]}${nameArr[1] ? " " + nameArr[1][0] + "." : ""}`;
-                                    }
+                                    profile = profileData;
                                 }
                             }
                         } catch (err) {
                             console.error("Profile fetch failed for uid", uid, err);
                         }
 
-                        return {
-                            name: userName,
-                            total: 0,
-                        };
+                        return profile;
                     });
 
-                    let newPeople = await Promise.all(peoplePromises);
+                    const profiles = await Promise.all(peoplePromises);
+                    const displayNames = formatDistinctNames(profiles);
+                    let newPeople = profiles.map((profile, index) => ({
+                        name: displayNames[index],
+                        total: 0,
+                    }));
 
                     newPeople = getTotals(newPeople, data.groceryList);
                     setPeople(newPeople);
@@ -167,58 +242,64 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
     }, [groceryList, user, listId, people]);
 
     async function handleShare() {
-        if (!shareEmail.includes("@")) {
-            alert("Please enter a valid email");
+        if (selectedPeople.length === 0) {
+            alert("Choose at least one person to share with");
             return;
         }
-        console.log("Invite:", shareEmail);
 
         try {
-            const sanitizedEmail = shareEmail.replace(/\./g, ",");
-            const emailSnap = await get(
-                ref(db, `userEmails/${sanitizedEmail}`),
-            );
-            if (!emailSnap.exists()) {
-                alert("No user found with this email");
-                return;
-            }
-
-            const invitedUid = emailSnap.val();
-            // console.log("Invited UID:", invitedUid);
-
             const functions = getFunctions(app);
             const shareListFn = httpsCallable(functions, "shareList");
             await shareListFn({
                 listId,
-                invitedUid,
+                invitedUids: selectedPeople.map((person) => person.uid),
             });
 
-            const profile = await getUserProfile(invitedUid);
-
-            const nameArr: string[] = profile.name.split(" ");
-            const userName: string = `${nameArr[0]}${nameArr[1] ? " " + nameArr[1][0] + "." : ""}`;
-
-            await alert("List shared successfully");
-            setShareEmail("");
+            alert("List shared successfully");
+            setShareSearch("");
+            setShareSuggestions([]);
+            setSelectedPeople([]);
             setShowShareForm(false);
-
-            const newPeople: Person[] = people.map((person: Person) => {
-                return { ...person };
-            });
-            newPeople.push({
-                name: userName ? userName : "_",
-                total: 0,
-            });
-
-            setPeople(newPeople);
-
-            const peopleRef = ref(db, `lists/${listId}/people`);
-            set(peopleRef, newPeople);
         } catch (err) {
             alert("Failed to share list");
             console.error("Error sharing list:", err);
         }
     }
+
+    useEffect(() => {
+        const query = shareSearch.trim();
+        if (query.length < 2) {
+            setShareSuggestions([]);
+            return;
+        }
+
+        const timer = window.setTimeout(async () => {
+            setIsSearchingPeople(true);
+            try {
+                const functions = getFunctions(app);
+                const searchUsersFn = httpsCallable<
+                    {query: string},
+                    {users: {uid: string; name: string; email: string}[]}
+                >(functions, "searchUsers");
+                const result = await searchUsersFn({query});
+                setShareSuggestions(
+                    result.data.users.filter(
+                        (person) =>
+                            !selectedPeople.some(
+                                (selected) => selected.uid === person.uid,
+                            ) && person.uid !== user?.uid,
+                    ),
+                );
+            } catch (error) {
+                console.error("Failed to search users:", error);
+                setShareSuggestions([]);
+            } finally {
+                setIsSearchingPeople(false);
+            }
+        }, 250);
+
+        return () => window.clearTimeout(timer);
+    }, [shareSearch, selectedPeople, user]);
 
     const priceRefs = useRef<(HTMLInputElement | null)[]>([]);
     return (
@@ -376,23 +457,83 @@ export function ReceiptSplitter({ user }: { user: fbauth.User | null }) {
             </button>
             {showShareForm && (
                 <div className="share-form share-form-fixed">
-                    <input
-                        type="email"
-                        placeholder="Enter Email"
-                        value={shareEmail}
-                        onChange={(e) => setShareEmail(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                                handleShare();
-                                setShareEmail("");
-                            }
-                        }}
-                    />
-                    <button onClick={handleShare}>Invite</button>
+                    <div className="share-picker">
+                        <div className="share-selected">
+                            {selectedPeople.map((person) => (
+                                <span className="person-chip" key={person.uid}>
+                                    {person.name || person.email}
+                                    <button
+                                        type="button"
+                                        aria-label={`Remove ${person.name || person.email}`}
+                                        onClick={() =>
+                                            setSelectedPeople((current) =>
+                                                current.filter(
+                                                    (selected) =>
+                                                        selected.uid !== person.uid,
+                                                ),
+                                            )
+                                        }
+                                    >
+                                        ×
+                                    </button>
+                                </span>
+                            ))}
+                            <input
+                                type="text"
+                                placeholder="Add people by name or email"
+                                value={shareSearch}
+                                onChange={(e) => setShareSearch(e.target.value)}
+                            />
+                        </div>
+                        {(isSearchingPeople || shareSuggestions.length > 0) && (
+                            <div className="share-suggestions">
+                                {isSearchingPeople && (
+                                    <div className="share-suggestion-status">
+                                        Searching people…
+                                    </div>
+                                )}
+                                {shareSuggestions.map((person) => (
+                                    <button
+                                        type="button"
+                                        className="share-suggestion"
+                                        key={person.uid}
+                                        onClick={() => {
+                                            setSelectedPeople((current) => [
+                                                ...current,
+                                                person,
+                                            ]);
+                                            setShareSearch("");
+                                            setShareSuggestions([]);
+                                        }}
+                                    >
+                                        <span className="suggestion-avatar">
+                                            {(person.name || person.email)
+                                                .charAt(0)
+                                                .toUpperCase()}
+                                        </span>
+                                        <span>
+                                            <strong>
+                                                {person.name || "Unnamed user"}
+                                            </strong>
+                                            <small>{person.email}</small>
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                    <button
+                        onClick={handleShare}
+                        disabled={selectedPeople.length === 0}
+                    >
+                        Share
+                    </button>
                     <button
                         onClick={() => {
                             setShowShareForm(false);
-                            setShareEmail("");
+                            setShareSearch("");
+                            setShareSuggestions([]);
+                            setSelectedPeople([]);
                         }}
                     >
                         Cancel
