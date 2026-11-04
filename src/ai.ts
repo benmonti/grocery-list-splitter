@@ -16,6 +16,54 @@ function extractMimeType(dataUrl: string, fallback = "image/jpeg"): string {
     return match?.[1] ?? fallback;
 }
 
+interface ReceiptItem {
+    name: string;
+    price: number;
+    people: boolean[];
+}
+
+interface ReceiptAnalysis {
+    storeName?: string;
+    items: ReceiptItem[];
+    receiptSubtotal: number;
+}
+
+const genericNameMappings: Record<string, string> = {
+    "kl evoo": "Extra Virgin Olive Oil",
+    "kirkland evoo": "Extra Virgin Olive Oil",
+    evoo: "Extra Virgin Olive Oil",
+    "tide pods": "Laundry Detergent Pods",
+    "downy ultra": "Fabric Softener",
+};
+
+function normalizeReceiptAnalysis(text: string): string {
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}");
+    if (start === -1 || end === -1) return text;
+
+    try {
+        const analysis = JSON.parse(
+            text.slice(start, end + 1),
+        ) as ReceiptAnalysis;
+        if (!Array.isArray(analysis.items)) return text;
+
+        const store = (analysis.storeName || "").toLowerCase();
+        analysis.items = analysis.items.map((item) => {
+            const key = item.name.trim().toLowerCase();
+            const mappedName = genericNameMappings[key];
+            return mappedName ? { ...item, name: mappedName } : item;
+        });
+
+        console.log(
+            `Normalized ${analysis.items.length} receipt items` +
+                (store ? ` for ${analysis.storeName}` : ""),
+        );
+        return JSON.stringify(analysis);
+    } catch {
+        return text;
+    }
+}
+
 export async function getGeminiResponse(
     image: string,
     mimeType = "image/jpeg",
@@ -38,24 +86,25 @@ export async function getGeminiResponse(
                 responseSchema: {
                     type: "OBJECT",
                     properties: {
+                        storeName: { type: "STRING" },
                         items: {
                             type: "ARRAY",
                             items: {
                                 type: "OBJECT",
                                 properties: {
-                                    name: {type: "STRING"},
-                                    price: {type: "NUMBER"},
+                                    name: { type: "STRING" },
+                                    price: { type: "NUMBER" },
                                     people: {
                                         type: "ARRAY",
-                                        items: {type: "BOOLEAN"},
+                                        items: { type: "BOOLEAN" },
                                     },
                                 },
                                 required: ["name", "price", "people"],
                             },
                         },
-                        receiptSubtotal: {type: "NUMBER"},
+                        receiptSubtotal: { type: "NUMBER" },
                     },
-                    required: ["items", "receiptSubtotal"],
+                    required: ["storeName", "items", "receiptSubtotal"],
                 },
             },
             contents: [
@@ -63,10 +112,13 @@ export async function getGeminiResponse(
                     role: "user",
                     parts: [
                         { text: systemInstructions },
-                        ...(attempt > 1 ? [{
-                            text:
-                                "This is a reanalysis attempt. Carefully inspect every line item and the receipt subtotal again before responding.",
-                        }] : []),
+                        ...(attempt > 1 ?
+                            [
+                                {
+                                    text: "This is a reanalysis attempt. Carefully inspect every line item and the receipt subtotal again before responding.",
+                                },
+                            ]
+                        :   []),
                         {
                             inlineData: {
                                 mimeType: resolvedMimeType,
@@ -79,7 +131,7 @@ export async function getGeminiResponse(
         });
 
         console.log("RAW GEMINI RESPONSE:\n", result.text);
-        return result.text;
+        return normalizeReceiptAnalysis(result.text || "");
     } catch (error) {
         console.error("Gemini API Error:", error);
         throw error;

@@ -139,7 +139,7 @@ export function UploadReciept({
                     "receipt.jpg"
                 :   file.name;
 
-            const maxAttempts = 5;
+            const maxAttempts = 2;
             let verifiedItems: Item[] | null = null;
 
             for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
@@ -233,7 +233,11 @@ export function UploadReciept({
                 style={{ display: "none" }}
             />
             {isProcessing && (
-                <div className="loading-overlay" role="status" aria-live="polite">
+                <div
+                    className="loading-overlay"
+                    role="status"
+                    aria-live="polite"
+                >
                     <div className="loading-card">
                         <span className="loading-spinner" aria-hidden="true" />
                         <h2>{processingStage}</h2>
