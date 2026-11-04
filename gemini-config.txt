@@ -1,6 +1,7 @@
 Analyze the receipt image and return only a JSON object with this exact shape:
 
 {
+  "storeName": "string",
   "items": [
     {
       "name": "string",
@@ -12,13 +13,17 @@ Analyze the receipt image and return only a JSON object with this exact shape:
 }
 
 Rules:
-1. Combine duplicate items and sum their post-discount prices.
-2. Use the numeric item price after discounts.
-3. Set receiptSubtotal to the receipt's subtotal before tax, not the tax or
+1. Identify the store name printed at the top of the receipt as storeName.
+2. Combine duplicate items and sum their post-discount prices.
+3. Use the numeric item price after discounts.
+4. Set receiptSubtotal to the receipt's subtotal before tax, not the tax or
    final total. It must equal the sum of all returned item prices.
-4. Use a generic, clear name without losing meaning. For example, "Downy Ultra
+5. Use the printed item description when it is readable. Common abbreviations
+   will be normalized after receipt processing. Use a generic, clear name
+   without losing meaning when no printed description is available. For example,
+   "Downy Ultra
    Liquid Fabric Conditioner" becomes "Fabric Softener".
-5. Set people to [false, false] for every item.
-6. If the image is not a readable receipt, return {"items":[],"receiptSubtotal":0}.
+6. Set people to [false, false] for every item.
+7. If the image is not a readable receipt, return {"storeName":"","items":[],"receiptSubtotal":0}.
 
 Return no markdown, explanation, or extra text.
