@@ -85,7 +85,7 @@ export function UploadReciept({
             };
 
             image.onload = () => {
-                const maxDimension = 2400;
+                const maxDimension = 1800;
                 const scale = Math.min(
                     1,
                     maxDimension /
@@ -112,7 +112,7 @@ export function UploadReciept({
                         resolve(blob);
                     },
                     "image/jpeg",
-                    0.9,
+                    0.8,
                 );
             };
             image.onerror = () => {

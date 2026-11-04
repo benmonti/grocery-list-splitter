@@ -2,7 +2,6 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import { getGeminiResponse } from "./ai.js";
-import { BACKEND_URL } from "./url.js";
 import multer from "multer";
 import convertHeic from "heic-convert";
 
@@ -17,7 +16,7 @@ const PORT = process.env.PORT || 3001;
 
 const app = express();
 
-app.use(express.json({ limit: "30mb" }));
+app.use(express.json({ limit: "12mb" }));
 app.use(
     cors({
         origin: [
@@ -57,8 +56,8 @@ app.post("/api/generate", async (req, res) => {
 
 const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 25 * 1024 * 1024, files: 1 },
-}); // Limit to 25MB
+    limits: { fileSize: 10 * 1024 * 1024, files: 1 },
+});
 
 function isHeicUpload(file) {
     return (
@@ -97,20 +96,12 @@ app.post(
             }
 
             const base64Image = Buffer.from(imageBuffer).toString("base64");
-            console.log("Received image length:", base64Image.length);
-
-            const response = await fetch(`${BACKEND_URL}/api/generate`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    image: base64Image,
-                    mimeType,
-                }),
-            });
-
-            const data = await response.json();
-
-            res.status(response.status).json(data);
+            const message = await getGeminiResponse(
+                base64Image,
+                mimeType,
+                Number(req.body.attempt) || 1,
+            );
+            res.json({ message });
         } catch (err) {
             console.error("Error in /api/upload:", err);
             res.status(500).json({
@@ -123,7 +114,7 @@ app.post(
             if (err.code === "LIMIT_FILE_SIZE") {
                 return res
                     .status(413)
-                    .json({ error: "File too large (max 25MB allowed)." });
+                    .json({ error: "File too large (max 10MB allowed)." });
             }
         }
         next(err);
