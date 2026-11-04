@@ -153,10 +153,19 @@ export function UploadReciept({
                 attemptFormData.append("file", compressedImage, fileName);
                 attemptFormData.append("attempt", String(attempt));
 
-                const res = await fetch(`${BACKEND_URL}/api/upload`, {
-                    method: "POST",
-                    body: attemptFormData,
-                });
+                let res: Response;
+                try {
+                    res = await fetch(`${BACKEND_URL}/api/upload`, {
+                        method: "POST",
+                        body: attemptFormData,
+                    });
+                } catch (requestError) {
+                    throw new Error(
+                        `Could not connect to the receipt server at ${BACKEND_URL}. ` +
+                            "Check your connection or try again.",
+                        { cause: requestError },
+                    );
+                }
                 const data = await res.json();
                 if (!res.ok || data?.error) {
                     throw new Error(data?.error || "Receipt processing failed");

@@ -22,7 +22,10 @@ app.use(
     cors({
         origin: [
             "https://benmonti.github.io",
+            "https://www.benmonti.github.io",
             "https://grocery-list-split.onrender.com",
+            "http://localhost:3000",
+            "http://localhost:5173",
         ],
         methods: ["GET", "POST", "OPTIONS"],
         allowedHeaders: ["Content-Type"],
@@ -88,8 +91,7 @@ app.post(
                 } catch (conversionError) {
                     console.error("HEIC conversion failed:", conversionError);
                     return res.status(415).json({
-                        error:
-                            "This HEIC image could not be converted. Please upload it as a JPEG or PNG.",
+                        error: "This HEIC image could not be converted. Please upload it as a JPEG or PNG.",
                     });
                 }
             }
