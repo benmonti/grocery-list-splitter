@@ -27,6 +27,7 @@
     },
     "scripts": {
         "test:gemini": "tsc && node --test tests/geminiRetry.test.mjs",
+        "test:receipts": "tsc && node --test tests/heicConversion.test.mjs tests/receiptImage.test.mjs",
         "dev": "vite",
         "build": "vite build",
         "preview": "vite preview",

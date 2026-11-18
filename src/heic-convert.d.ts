@@ -1,0 +1,7 @@
+declare module "heic-convert/browser.js" {
+    export default function convert(options: {
+        buffer: Uint8Array;
+        format: "PNG" | "JPEG";
+        quality?: number;
+    }): Promise<Uint8Array>;
+}

@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
 import { Item } from "../interfaces/item";
 import { BACKEND_URL } from "../url";
+import { convertHeicToPng } from "../heicConversion";
 
 export function UploadReciept({
     groceryList,
@@ -46,8 +47,7 @@ export function UploadReciept({
 
     function isHeicFile(file: File): boolean {
         return (
-            file.type === "image/heic" ||
-            file.type === "image/heif" ||
+            /^image\/hei[cf](?:-sequence)?$/i.test(file.type) ||
             /\.(heic|heif)$/i.test(file.name)
         );
     }
@@ -58,7 +58,16 @@ export function UploadReciept({
         }
 
         if (isHeicFile(file)) {
-            setProcessingStage("Preparing your HEIC receipt");
+            setProcessingStage("Converting your HEIC receipt to PNG");
+            try {
+                const png = await convertHeicToPng(file);
+                return compressReceiptImage(png, "receipt.png", "image/png");
+            } catch (conversionError) {
+                throw new Error(
+                    "This HEIC image could not be converted. Please export it as a JPEG or PNG and try again.",
+                    { cause: conversionError },
+                );
+            }
         }
 
         return compressReceiptImage(file, file.name);
@@ -67,6 +76,7 @@ export function UploadReciept({
     function compressReceiptImage(
         file: Blob,
         originalName: string,
+        outputType = "image/jpeg",
     ): Promise<Blob> {
         return new Promise((resolve, reject) => {
             if (
@@ -85,7 +95,7 @@ export function UploadReciept({
             };
 
             image.onload = () => {
-                const maxDimension = 1800;
+                const maxDimension = outputType === "image/png" ? 1600 : 1800;
                 const scale = Math.min(
                     1,
                     maxDimension /
@@ -111,7 +121,7 @@ export function UploadReciept({
                         }
                         resolve(blob);
                     },
-                    "image/jpeg",
+                    outputType,
                     0.8,
                 );
             };
@@ -134,10 +144,15 @@ export function UploadReciept({
         try {
             setProcessingStage("Preparing your receipt");
             const compressedImage = await prepareReceiptImage(file);
+            if (compressedImage.size > 10 * 1024 * 1024) {
+                throw new Error(
+                    "This image is too large to upload. Please choose a smaller receipt photo.",
+                );
+            }
             const fileName =
-                compressedImage.type === "image/jpeg" ?
-                    "receipt.jpg"
-                :   file.name;
+                compressedImage.type === "image/jpeg" ? "receipt.jpg"
+                : compressedImage.type === "image/png" ? "receipt.png"
+                : file.name;
 
             const maxAttempts = 2;
             let verifiedItems: Item[] | null = null;

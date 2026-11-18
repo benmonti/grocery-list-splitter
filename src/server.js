@@ -4,7 +4,7 @@ import cors from "cors";
 import { getGeminiResponse } from "./ai.js";
 import { isRetryableGeminiError } from "./geminiRetry.js";
 import multer from "multer";
-import convertHeic from "heic-convert";
+import { prepareReceiptUpload } from "./receiptImage.js";
 
 dotenv.config();
 
@@ -65,14 +65,6 @@ const upload = multer({
     limits: { fileSize: 10 * 1024 * 1024, files: 1 },
 });
 
-function isHeicUpload(file) {
-    return (
-        file.mimetype === "image/heic" ||
-        file.mimetype === "image/heif" ||
-        /\.(heic|heif)$/i.test(file.originalname)
-    );
-}
-
 app.post(
     "/api/upload",
     upload.single("file"),
@@ -82,29 +74,19 @@ app.post(
                 return res.status(400).json({ error: "No file uploaded" });
             }
 
-            let imageBuffer = req.file.buffer;
-            let mimeType = req.file.mimetype;
-
-            if (isHeicUpload(req.file)) {
-                try {
-                    imageBuffer = await convertHeic({
-                        buffer: req.file.buffer,
-                        format: "JPEG",
-                        quality: 0.9,
-                    });
-                    mimeType = "image/jpeg";
-                } catch (conversionError) {
-                    console.error("HEIC conversion failed:", conversionError);
-                    return res.status(415).json({
-                        error: "This HEIC image could not be converted. Please upload it as a JPEG or PNG.",
-                    });
-                }
+            let receipt;
+            try {
+                receipt = prepareReceiptUpload(req.file);
+            } catch (conversionError) {
+                return res.status(415).json({
+                    error: conversionError.message,
+                });
             }
 
-            const base64Image = Buffer.from(imageBuffer).toString("base64");
+            const base64Image = receipt.buffer.toString("base64");
             const message = await getGeminiResponse(
                 base64Image,
-                mimeType,
+                receipt.mimeType,
                 Number(req.body.attempt) || 1,
             );
             res.json({ message });
