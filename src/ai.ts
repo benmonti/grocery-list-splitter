@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 import * as fs from "fs";
+import { withGeminiRetries } from "./geminiRetry.js";
 
 const FILE_PATH: string = "public/gemini-config.txt";
 dotenv.config();
@@ -73,13 +74,13 @@ export async function getGeminiResponse(
         return "No Image Provided";
     }
 
-    try {
-        const systemInstructions = fs.readFileSync(FILE_PATH, "utf-8");
+    const systemInstructions = fs.readFileSync(FILE_PATH, "utf-8");
 
-        const resolvedMimeType = extractMimeType(image, mimeType);
-        const base64Image = stripBase64Prefix(image);
+    const resolvedMimeType = extractMimeType(image, mimeType);
+    const base64Image = stripBase64Prefix(image);
 
-        const result = await ai.models.generateContent({
+    const result = await withGeminiRetries(() =>
+        ai.models.generateContent({
             model: "gemini-2.5-flash",
             config: {
                 responseMimeType: "application/json",
@@ -128,12 +129,9 @@ export async function getGeminiResponse(
                     ],
                 },
             ],
-        });
+        }),
+    );
 
-        console.log("RAW GEMINI RESPONSE:\n", result.text);
-        return normalizeReceiptAnalysis(result.text || "");
-    } catch (error) {
-        console.error("Gemini API Error:", error);
-        throw error;
-    }
+    console.log("RAW GEMINI RESPONSE:\n", result.text);
+    return normalizeReceiptAnalysis(result.text || "");
 }

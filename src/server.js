@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import { getGeminiResponse } from "./ai.js";
+import { isRetryableGeminiError } from "./geminiRetry.js";
 import multer from "multer";
 import convertHeic from "heic-convert";
 
@@ -50,6 +51,11 @@ app.post("/api/generate", async (req, res) => {
         res.json({ message: text });
     } catch (error) {
         console.error("Error in /api/generate:", error);
+        if (isRetryableGeminiError(error)) {
+            return res.set("Retry-After", "10").status(503).json({
+                error: "Receipt analysis is temporarily unavailable. Please try again in a moment.",
+            });
+        }
         res.status(500).json({ error: "Failed to generate response" });
     }
 });
@@ -104,6 +110,11 @@ app.post(
             res.json({ message });
         } catch (err) {
             console.error("Error in /api/upload:", err);
+            if (isRetryableGeminiError(err)) {
+                return res.set("Retry-After", "10").status(503).json({
+                    error: "Receipt analysis is temporarily unavailable. Please try again in a moment.",
+                });
+            }
             res.status(500).json({
                 error: "Failed to process uploaded file",
             });
